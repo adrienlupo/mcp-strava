@@ -125,3 +125,4 @@ dist
 
 # Strava MCP specific
 data/tokens.json
+dist/*.map
