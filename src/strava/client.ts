@@ -5,6 +5,7 @@ import type {
   AthleteStats,
   ActivitySummary,
   ActivityDetail,
+  AthleteZones,
 } from "src/strava/types.js";
 
 const STRAVA_API_BASE = "https://www.strava.com/api/v3";
@@ -98,6 +99,15 @@ export class StravaClient {
    */
   async getActivityDetail(id: number): Promise<ActivityDetail> {
     const response = await this.axios.get<ActivityDetail>(`/activities/${id}`);
+    return response.data;
+  }
+
+  /**
+   * Get the authenticated athlete's heart rate and power zones
+   * Requires profile:read_all scope
+   */
+  async getAthleteZones(): Promise<AthleteZones> {
+    const response = await this.axios.get<AthleteZones>("/athlete/zones");
     return response.data;
   }
 }

@@ -19,7 +19,7 @@ export function getAuthorizationUrl(): string {
     client_id: config.stravaClientId,
     redirect_uri: config.stravaRedirectUri,
     response_type: "code",
-    scope: "read,activity:read_all",
+    scope: "read,activity:read_all,profile:read_all",
   });
 
   return `${STRAVA_AUTH_URL}?${params.toString()}`;

@@ -185,3 +185,22 @@ export interface SimilarActivity {
   starred_count: number;
   total_elevation_gain: number;
 }
+
+export interface AthleteZones {
+  heart_rate?: HeartRateZones;
+  power?: PowerZones;
+}
+
+export interface HeartRateZones {
+  custom_zones: boolean;
+  zones: Zone[];
+}
+
+export interface PowerZones {
+  zones: Zone[];
+}
+
+export interface Zone {
+  min: number;
+  max: number;
+}

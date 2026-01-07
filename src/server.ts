@@ -16,6 +16,10 @@ import {
   getActivityDetail,
   getActivityDetailSchema,
 } from "src/tools/getActivityDetail.js";
+import {
+  getAthleteZones,
+  getAthleteZonesSchema,
+} from "src/tools/getAthleteZones.js";
 
 export function createMcpServer(stravaClient: StravaClient) {
   const server = new McpServer({
@@ -90,6 +94,18 @@ export function createMcpServer(stravaClient: StravaClient) {
         stravaClient,
         getActivityDetailSchema.parse(input)
       ),
+    })
+  );
+
+  server.registerTool(
+    "get_athlete_zones",
+    {
+      description:
+        "Get the authenticated athlete's heart rate and power zones. Returns zone configuration for both heart rate (if configured) and power (if available). Heart rate zones include custom zone settings and min/max values for each zone. Power zones include FTP-based zone ranges. Use this when the user asks about their training zones, heart rate zones, power zones, or FTP settings. Requires profile:read_all scope. No parameters required.",
+      inputSchema: getAthleteZonesSchema,
+    },
+    async (input) => ({
+      content: await getAthleteZones(stravaClient, input as never),
     })
   );
 
