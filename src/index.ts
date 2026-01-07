@@ -4,13 +4,17 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { createMcpServer } from "src/server.js";
 import { config } from "src/config.js";
 import authRoutes from "src/auth/routes.js";
+import { TokenManager } from "src/auth/tokenManager.js";
+import { StravaClient } from "src/strava/client.js";
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-const mcpServer = createMcpServer();
+const tokenManager = new TokenManager(config.tokenFilePath);
+const stravaClient = new StravaClient(tokenManager);
+const mcpServer = createMcpServer(stravaClient);
 
 const transport = new StreamableHTTPServerTransport();
 
