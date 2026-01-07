@@ -1,6 +1,6 @@
 # Strava MCP Server
 
-Model Context Protocol server for Strava API integration. Built with TypeScript and Express.
+Model Context Protocol server for Strava API integration. Built with TypeScript and uses stdio transport for Claude Desktop.
 
 ## Tools
 
@@ -30,8 +30,8 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 {
   "mcpServers": {
     "strava": {
-      "command": "npx",
-      "args": ["-y", "/absolute/path/to/strava-mcp"],
+      "command": "node",
+      "args": ["/absolute/path/to/strava-mcp/dist/index.js"],
       "env": {
         "STRAVA_CLIENT_ID": "your_client_id",
         "STRAVA_CLIENT_SECRET": "your_client_secret",
@@ -43,31 +43,30 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 }
 ```
 
-**Note:** All credentials are configured in Claude Desktop's config. No `.env` file is needed.
+**Note:** Replace `/absolute/path/to/strava-mcp` with your actual project path.
 
-### 4. Restart Claude Desktop
+### 4. Authorize with Strava
+
+Run the authorization server with your Strava credentials:
+
+```bash
+STRAVA_CLIENT_ID=your_client_id \
+STRAVA_CLIENT_SECRET=your_client_secret \
+STRAVA_REDIRECT_URI=http://localhost:3000/auth/callback \
+TOKEN_FILE_PATH=/absolute/path/to/strava-mcp/data/tokens.json \
+npm run auth
+```
+
+Then visit `http://localhost:3000/auth/strava` in your browser to authorize. After successful authorization, stop the server (Ctrl+C).
+
+### 5. Restart Claude Desktop
 
 Restart Claude Desktop to load the MCP server.
 
-### 5. Authorize with Strava
-
-Visit `http://localhost:3000/auth/strava` to authorize the application with your Strava account.
-
 ## Development
-
-For standalone development (without Claude Desktop):
-
-1. Create a `.env` file based on `.env.example`
-2. Run the dev server:
 
 ```bash
 npm install
-npm run dev
+npm run build
+npm start
 ```
-
-## Endpoints
-
-- `/mcp` - MCP protocol endpoint
-- `/health` - Health check
-- `/auth/strava` - OAuth authorization
-- `/auth/status` - Check authorization status
