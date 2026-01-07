@@ -9,5 +9,5 @@ export async function getAthleteZones(
   _input: Record<string, never>
 ): Promise<TextContent[]> {
   const zones = await client.getAthleteZones();
-  return [{ type: "text", text: JSON.stringify(zones, null, 2) }];
+  return [{ type: "text", text: JSON.stringify(zones) }];
 }

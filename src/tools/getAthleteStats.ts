@@ -9,5 +9,5 @@ export async function getAthleteStats(
   _input: Record<string, never>
 ): Promise<TextContent[]> {
   const stats = await client.getAthleteStats();
-  return [{ type: "text", text: JSON.stringify(stats, null, 2) }];
+  return [{ type: "text", text: JSON.stringify(stats) }];
 }

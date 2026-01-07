@@ -14,5 +14,9 @@ export async function getActivityDetail(
   input: z.infer<typeof getActivityDetailSchema>
 ): Promise<TextContent[]> {
   const activity = await client.getActivityDetail(input.activity_id);
-  return [{ type: "text", text: JSON.stringify(activity, null, 2) }];
+
+  // Remove heavy/unnecessary data for token efficiency
+  const { map, photos, external_id, upload_id, similar_activities, ...strippedActivity } = activity;
+
+  return [{ type: "text", text: JSON.stringify(strippedActivity) }];
 }
