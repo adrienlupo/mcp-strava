@@ -19,7 +19,10 @@ function loadConfig() {
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      // Don't log to stderr in stdio mode - just exit
+      console.error("Configuration validation failed:");
+      for (const issue of error.issues) {
+        console.error(`- ${issue.message}`);
+      }
       process.exit(1);
     }
     throw error;

@@ -47,17 +47,22 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 
 ### 4. Authorize with Strava
 
-Run the authorization server with your Strava credentials:
+Create a `.env` file in the project root with your Strava credentials:
 
 ```bash
-STRAVA_CLIENT_ID=your_client_id \
-STRAVA_CLIENT_SECRET=your_client_secret \
-STRAVA_REDIRECT_URI=http://localhost:3000/auth/callback \
-TOKEN_FILE_PATH=/absolute/path/to/strava-mcp/data/tokens.json \
+STRAVA_CLIENT_ID=your_client_id
+STRAVA_CLIENT_SECRET=your_client_secret
+STRAVA_REDIRECT_URI=http://localhost:3000/auth/callback
+TOKEN_FILE_PATH=/absolute/path/to/strava-mcp/data/tokens.json
+```
+
+Then run the authorization server:
+
+```bash
 npm run auth
 ```
 
-Then visit `http://localhost:3000/auth/strava` in your browser to authorize. After successful authorization, stop the server (Ctrl+C).
+Visit `http://localhost:3000/auth/strava` in your browser to authorize. After successful authorization, stop the server (Ctrl+C).
 
 ### 5. Restart Claude Desktop
 
