@@ -1,7 +1,4 @@
-import dotenv from "dotenv";
 import { z } from "zod";
-
-dotenv.config();
 
 const configSchema = z.object({
   port: z.string().default("3000"),
@@ -22,7 +19,7 @@ function loadConfig() {
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      console.error(error);
+      // Don't log to stderr in stdio mode - just exit
       process.exit(1);
     }
     throw error;
