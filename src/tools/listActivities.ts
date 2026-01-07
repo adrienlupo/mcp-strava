@@ -7,7 +7,7 @@ export const listActivitiesSchema = z.object({
     .number()
     .min(1)
     .max(50)
-    .default(30)
+    .default(10)
     .describe(
       "Maximum number of activities to return (1-30). Strava API limits to 200 per request but limited to 50 for token efficiency."
     ),
@@ -34,17 +34,10 @@ export async function listActivities(
   client: StravaClient,
   input: z.infer<typeof listActivitiesSchema>
 ): Promise<TextContent[]> {
-  // Apply 3-month default if no time filters specified
-  let after = input.after;
-  if (!input.after && !input.before) {
-    const threeMonthsAgo = Math.floor(Date.now() / 1000) - 90 * 24 * 60 * 60;
-    after = threeMonthsAgo;
-  }
-
   const activities = await client.listActivities({
     per_page: input.limit,
     before: input.before,
-    after: after,
+    after: input.after,
     page: input.page,
   });
 
