@@ -1,8 +1,3 @@
-/**
- * Strava API type definitions
- * Based on Strava API v3 documentation
- */
-
 export interface AthleteProfile {
   id: number;
   username: string;
