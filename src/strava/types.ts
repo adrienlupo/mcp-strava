@@ -199,3 +199,28 @@ export interface Zone {
   min: number;
   max: number;
 }
+
+export type StreamType =
+  | "time"
+  | "distance"
+  | "latlng"
+  | "altitude"
+  | "heartrate"
+  | "cadence"
+  | "watts"
+  | "velocity_smooth"
+  | "grade_smooth"
+  | "moving"
+  | "temp";
+
+export type StreamResolution = "low" | "medium" | "high";
+
+export interface Stream {
+  type: StreamType;
+  data: number[] | [number, number][] | boolean[];
+  series_type: "time" | "distance";
+  original_size: number;
+  resolution: StreamResolution;
+}
+
+export type StreamSet = Stream[];
