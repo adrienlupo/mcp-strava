@@ -1,40 +1,24 @@
-export function getMondayOfWeek(date: Date): Date {
-  const result = new Date(date);
-  const day = result.getDay();
-  const daysToSubtract = day === 0 ? 6 : day - 1;
-  result.setDate(result.getDate() - daysToSubtract);
-  result.setHours(0, 0, 0, 0);
-  return result;
-}
+import dayjs from "dayjs";
+import weekday from "dayjs/plugin/weekday.js";
+import updateLocale from "dayjs/plugin/updateLocale.js";
 
-export function getWeekRange(weekOffset: number): { after: number; before: number } {
-  const now = new Date();
-  const thisMonday = getMondayOfWeek(now);
+dayjs.extend(weekday);
+dayjs.extend(updateLocale);
+dayjs.updateLocale("en", { weekStart: 1 });
 
-  const targetMonday = new Date(thisMonday);
-  targetMonday.setDate(targetMonday.getDate() + weekOffset * 7);
-
-  const nextMonday = new Date(targetMonday);
-  nextMonday.setDate(nextMonday.getDate() + 7);
-
+export function getWeekRange(weekOffset: number): { from: string; to: string } {
+  const monday = dayjs().startOf("week").add(weekOffset, "week");
+  const sunday = monday.add(6, "day");
   return {
-    after: Math.floor(targetMonday.getTime() / 1000),
-    before: Math.floor(nextMonday.getTime() / 1000),
+    from: monday.format("YYYY-MM-DD"),
+    to: sunday.format("YYYY-MM-DD"),
   };
 }
 
-export function isoToUnixTimestamp(isoDate: string | undefined): number | undefined {
-  if (!isoDate) return undefined;
-
-  const timestamp = Math.floor(new Date(isoDate).getTime() / 1000);
-
-  if (isNaN(timestamp)) {
+export function isoToUnixTimestamp(isoDate: string, endOfDay = false): number {
+  const parsed = dayjs(isoDate);
+  if (!parsed.isValid()) {
     throw new Error(`Invalid date format: "${isoDate}". Use ISO format (e.g., "2024-01-01").`);
   }
-
-  return timestamp;
-}
-
-export function unixTimestampToIso(unixTimestamp: number): string {
-  return new Date(unixTimestamp * 1000).toISOString();
+  return endOfDay ? parsed.add(1, "day").unix() : parsed.unix();
 }

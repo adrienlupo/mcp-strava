@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { StravaClient } from "src/strava/client.js";
-import { isoToUnixTimestamp, getWeekRange } from "src/utils/dateService.js";
+import { getWeekRange, isoToUnixTimestamp } from "src/utils/dateService.js";
 import type { TextContent } from "@modelcontextprotocol/sdk/types.js";
 
 export const listActivitiesSchema = z.object({
@@ -52,36 +52,43 @@ export async function listActivities(
   client: StravaClient,
   input: z.infer<typeof listActivitiesSchema>
 ): Promise<TextContent[]> {
-  let before: number | undefined;
-  let after: number | undefined;
+  let fromIso: string | undefined;
+  let toIso: string | undefined;
   let perPage = input.limit;
 
   if (input.week_offset !== undefined) {
-    const weekRange = getWeekRange(input.week_offset);
-    after = weekRange.after;
-    before = weekRange.before;
-    perPage = 200; // Fetch all activities in the date range
+    const range = getWeekRange(input.week_offset);
+    fromIso = range.from;
+    toIso = range.to;
+    perPage = 200;
   } else {
-    before = isoToUnixTimestamp(input.before);
-    after = isoToUnixTimestamp(input.after);
-    // When both before and after are set, fetch all in range
-    if (before !== undefined && after !== undefined) {
+    fromIso = input.after;
+    toIso = input.before;
+    if (fromIso && toIso) {
       perPage = 200;
     }
   }
 
   const activities = await client.listActivities({
     per_page: perPage,
-    before,
-    after,
+    after: fromIso ? isoToUnixTimestamp(fromIso) : undefined,
+    before: toIso ? isoToUnixTimestamp(toIso, true) : undefined,
     page: input.page,
   });
 
-  // Remove heavy/unnecessary data for token efficiency
   const strippedActivities = activities.map((activity) => {
     const { map, external_id, upload_id, ...rest } = activity;
     return rest;
   });
 
-  return [{ type: "text", text: JSON.stringify(strippedActivities) }];
+  const response: {
+    queried_range?: { from: string; to: string };
+    activities: typeof strippedActivities;
+  } = { activities: strippedActivities };
+
+  if (fromIso && toIso) {
+    response.queried_range = { from: fromIso, to: toIso };
+  }
+
+  return [{ type: "text", text: JSON.stringify(response) }];
 }
