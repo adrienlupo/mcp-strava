@@ -20,6 +20,10 @@ import {
   getAthleteZones,
   getAthleteZonesSchema,
 } from "src/tools/getAthleteZones.js";
+import {
+  getActivityStreams,
+  getActivityStreamsSchema,
+} from "src/tools/getActivityStreams.js";
 
 export function createMcpServer(stravaClient: StravaClient) {
   const server = new McpServer({
@@ -110,13 +114,14 @@ export function createMcpServer(stravaClient: StravaClient) {
     "get_activity_detail",
     {
       description:
-        "Get detailed information about a specific activity by its ID. " +
-        "Returns comprehensive data: name, description, distance, moving_time, elapsed_time, " +
+        "Get summary information about a specific activity by its ID. " +
+        "Returns: name, description, distance, moving_time, elapsed_time, " +
         "total_elevation_gain, calories, average_speed, max_speed, average_heartrate, max_heartrate, " +
         "average_watts, weighted_average_watts, kilojoules, average_cadence, splits_metric, " +
-        "splits_standard, laps, segment_efforts, gear, device_name, and embed_token. " +
-        "Workflow: First call list_activities to find the activity ID, then call this for details. " +
-        "Use for 'analyze my last run', 'show lap times', or 'what gear did I use'.",
+        "splits_standard, laps, segment_efforts, gear, device_name. " +
+        "Workflow: First call list_activities to find the activity ID, then call this for summary. " +
+        "For DETAILED ANALYSIS (pacing, HR drift, power curves, interval analysis), " +
+        "also call get_activity_streams to get second-by-second time-series data.",
       inputSchema: getActivityDetailSchema,
     },
     async (input) => ({
@@ -143,6 +148,33 @@ export function createMcpServer(stravaClient: StravaClient) {
     },
     async (input) => ({
       content: await getAthleteZones(stravaClient, input as never),
+    })
+  );
+
+  server.registerTool(
+    "get_activity_streams",
+    {
+      description:
+        "ALWAYS USE THIS for detailed activity analysis. " +
+        "Returns second-by-second time-series data essential for in-depth workout analysis:\n" +
+        "- time, distance, altitude, heartrate, cadence, watts, velocity_smooth, grade_smooth, latlng\n\n" +
+        "Response includes:\n" +
+        "- statistics: min/max/avg, normalized_power (watts), speed in km/h\n" +
+        "- data: paginated time-series arrays\n\n" +
+        "USE THIS TOOL when user asks for:\n" +
+        "- 'analyze my run/ride' or 'detailed analysis'\n" +
+        "- pacing consistency, HR drift, cardiac decoupling\n" +
+        "- power analysis, normalized power, interval breakdown\n" +
+        "- zone distribution, cadence patterns, elevation impact\n" +
+        "- any deep dive into workout metrics\n\n" +
+        "Workflow: get activity_id from list_activities, then fetch streams for analysis.",
+      inputSchema: getActivityStreamsSchema,
+    },
+    async (input) => ({
+      content: await getActivityStreams(
+        stravaClient,
+        getActivityStreamsSchema.parse(input)
+      ),
     })
   );
 
