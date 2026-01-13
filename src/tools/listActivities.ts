@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { StravaClient } from "src/strava/client.js";
-import { isoToUnixTimestamp, getWeekRange } from "src/services/dateService.js";
+import { isoToUnixTimestamp, getWeekRange } from "src/util/dateService.js";
 import type { TextContent } from "@modelcontextprotocol/sdk/types.js";
 
 export const listActivitiesSchema = z.object({
