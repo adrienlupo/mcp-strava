@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { StravaClient } from "src/strava/client.js";
+import { isoToUnixTimestamp } from "src/services/dateService.js";
 import type { TextContent } from "@modelcontextprotocol/sdk/types.js";
 
 export const listActivitiesSchema = z.object({
@@ -14,20 +15,18 @@ export const listActivitiesSchema = z.object({
         "Examples: limit=5 for 'my last 5 runs', limit=20 for 'recent activities'."
     ),
   before: z
-    .number()
+    .string()
     .optional()
     .describe(
-      "Return activities before this Unix timestamp (seconds since epoch). " +
-        "Example: 1704067200 = Jan 1, 2024 00:00:00 UTC. " +
+      "ISO date string for activities before this date (e.g., '2024-12-31'). " +
         "Use with 'after' for date ranges. Omit for most recent activities."
     ),
   after: z
-    .number()
+    .string()
     .optional()
     .describe(
-      "Return activities after this Unix timestamp (seconds since epoch). " +
-        "Example: 1701388800 = Dec 1, 2023 00:00:00 UTC. " +
-        "Only use when explicitly filtering by date range (e.g., 'activities this month'). " +
+      "ISO date string for activities after this date (e.g., '2024-01-01'). " +
+        "Only use when explicitly filtering by date range. " +
         "Omit for 'recent' or 'last N' queries - just use limit instead."
     ),
   page: z
@@ -47,8 +46,8 @@ export async function listActivities(
 ): Promise<TextContent[]> {
   const activities = await client.listActivities({
     per_page: input.limit,
-    before: input.before,
-    after: input.after,
+    before: isoToUnixTimestamp(input.before),
+    after: isoToUnixTimestamp(input.after),
     page: input.page,
   });
 
