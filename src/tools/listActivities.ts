@@ -18,17 +18,18 @@ export const listActivitiesSchema = z.object({
     .string()
     .optional()
     .describe(
-      "ISO date string for activities before this date (e.g., '2024-12-31'). " +
-        "Use with 'after' for date ranges. For 'last week', set to the Monday after (end of Sunday). " +
-        "Omit for most recent activities."
+      "ISO date string (e.g., '2024-12-31'). Activities before this date (exclusive). " +
+        "For week queries: use the Monday AFTER the week ends. " +
+        "Example: 'last week' ending Sunday Jan 12 -> before='2025-01-13' (Monday)."
     ),
   after: z
     .string()
     .optional()
     .describe(
-      "ISO date string for activities after this date (e.g., '2024-01-01'). " +
-        "For 'last week', use previous Monday. Week = Monday to Sunday (calendar week). " +
-        "Omit for 'recent' or 'last N' queries - just use limit instead."
+      "ISO date string (e.g., '2024-01-01'). Activities after this date. " +
+        "For week queries: use the Monday the week STARTS. " +
+        "Example: 'last week' starting Monday Jan 6 -> after='2025-01-06'. " +
+        "Weeks are Monday-Sunday. Omit for 'recent' or 'last N' queries."
     ),
   page: z
     .number()
