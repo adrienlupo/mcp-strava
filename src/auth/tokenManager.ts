@@ -12,9 +12,6 @@ export class TokenManager {
     this.ensureDataDirectory();
   }
 
-  /**
-   * Ensures the data directory exists
-   */
   private ensureDataDirectory(): void {
     const dir = path.dirname(this.tokenPath);
     if (!fs.existsSync(dir)) {
@@ -22,16 +19,10 @@ export class TokenManager {
     }
   }
 
-  /**
-   * Checks if tokens exist
-   */
   hasTokens(): boolean {
     return fs.existsSync(this.tokenPath);
   }
 
-  /**
-   * Loads tokens from file
-   */
   loadTokens(): StravaTokens {
     if (!this.hasTokens()) {
       throw new Error(
@@ -47,9 +38,6 @@ export class TokenManager {
     }
   }
 
-  /**
-   * Saves tokens to file
-   */
   saveTokens(tokens: StravaTokens): void {
     try {
       this.ensureDataDirectory();
@@ -59,18 +47,12 @@ export class TokenManager {
     }
   }
 
-  /**
-   * Checks if the access token is expired or about to expire
-   */
   private isTokenExpired(tokens: StravaTokens): boolean {
     const now = Math.floor(Date.now() / 1000);
     const bufferSeconds = 60;
     return tokens.expires_at <= now + bufferSeconds;
   }
 
-  /**
-   * Gets a valid access token, refreshing if necessary
-   */
   async getValidAccessToken(): Promise<string> {
     const tokens = this.loadTokens();
 

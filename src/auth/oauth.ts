@@ -11,9 +11,6 @@ export interface StravaTokens {
 const STRAVA_AUTH_URL = "https://www.strava.com/oauth/authorize";
 const STRAVA_TOKEN_URL = "https://www.strava.com/api/v3/oauth/token";
 
-/**
- * Generates the Strava OAuth authorization URL
- */
 export function getAuthorizationUrl(): string {
   const params = new URLSearchParams({
     client_id: config.stravaClientId,
@@ -25,9 +22,6 @@ export function getAuthorizationUrl(): string {
   return `${STRAVA_AUTH_URL}?${params.toString()}`;
 }
 
-/**
- * Exchanges an aJust uthorization code for access and refresh tokens
- */
 export async function exchangeCodeForTokens(
   code: string
 ): Promise<StravaTokens> {
@@ -57,10 +51,7 @@ export async function exchangeCodeForTokens(
   }
 }
 
-/**
- * Refreshes an access token using a refresh token
- * Important: Strava returns a NEW refresh token with each refresh
- */
+// Important: Strava returns a NEW refresh token with each refresh
 export async function refreshAccessToken(
   refreshToken: string
 ): Promise<StravaTokens> {

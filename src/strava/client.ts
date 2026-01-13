@@ -49,17 +49,11 @@ export class StravaClient {
     );
   }
 
-  /**
-   * Get the authenticated athlete's profile
-   */
   async getAthlete(): Promise<AthleteProfile> {
     const response = await this.axios.get<AthleteProfile>("/athlete");
     return response.data;
   }
 
-  /**
-   * Get stats for the authenticated athlete
-   */
   async getAthleteStats(): Promise<AthleteStats> {
     const athlete = await this.getAthlete();
     const response = await this.axios.get<AthleteStats>(
@@ -68,10 +62,6 @@ export class StravaClient {
     return response.data;
   }
 
-  /**
-   * List activities for the authenticated athlete
-   * @param options Filter options
-   */
   async listActivities(options?: {
     before?: number;
     after?: number;
@@ -93,19 +83,12 @@ export class StravaClient {
     return response.data;
   }
 
-  /**
-   * Get detailed information about a specific activity
-   * @param id Activity ID
-   */
   async getActivityDetail(id: number): Promise<ActivityDetail> {
     const response = await this.axios.get<ActivityDetail>(`/activities/${id}`);
     return response.data;
   }
 
-  /**
-   * Get the authenticated athlete's heart rate and power zones
-   * Requires profile:read_all scope
-   */
+  // Requires profile:read_all scope
   async getAthleteZones(): Promise<AthleteZones> {
     const response = await this.axios.get<AthleteZones>("/athlete/zones");
     return response.data;
