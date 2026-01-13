@@ -3,10 +3,6 @@ export function avg(arr: number[]): number {
   return arr.reduce((a, b) => a + b, 0) / arr.length;
 }
 
-export function sum(arr: number[]): number {
-  return arr.reduce((a, b) => a + b, 0);
-}
-
 export interface MinMaxAvg {
   min: number;
   max: number;

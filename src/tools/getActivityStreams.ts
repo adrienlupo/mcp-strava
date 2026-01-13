@@ -4,7 +4,7 @@ import type { TextContent } from "@modelcontextprotocol/sdk/types.js";
 import type { StreamType, StreamResolution } from "src/strava/types.js";
 import { STREAM_TYPES, STREAM_RESOLUTIONS } from "src/strava/constants.js";
 import {
-  detectIntervals,
+  processManualLaps,
   calculateSummary,
   calculateOverallStats,
   calculateZoneDistribution,
@@ -36,22 +36,20 @@ export const getActivityStreamsSchema = z.object({
     ),
   resolution: z
     .enum(STREAM_RESOLUTIONS)
-    .optional()
-    .describe(
-      "Data resolution. low (~100 points), medium (~1000 points), high (~10000 points). " +
-        "Default: Strava auto-selects based on activity length."
-    ),
+    .default("high")
+    .describe("Data resolution. Defaults to high for accurate analysis."),
 });
 
 export async function getActivityStreams(
   client: StravaClient,
   input: z.infer<typeof getActivityStreamsSchema>
 ): Promise<TextContent[]> {
-  const [streams, athleteZones] = await Promise.all([
+  const [streams, athleteZones, activityDetail] = await Promise.all([
     client.getActivityStreams(input.activity_id, input.types as StreamType[], {
-      resolution: input.resolution as StreamResolution | undefined,
+      resolution: input.resolution as StreamResolution,
     }),
     client.getAthleteZones().catch(() => null),
+    client.getActivityDetail(input.activity_id).catch(() => null),
   ]);
 
   if (!streams || streams.length === 0) {
@@ -66,20 +64,28 @@ export async function getActivityStreams(
     ];
   }
 
-  const intervals = detectIntervals(streams);
-  const summary = calculateSummary(intervals, streams);
+  const laps = activityDetail?.laps || [];
+  const sportType = activityDetail?.sport_type || "Unknown";
+  const manualLaps = processManualLaps(laps, streams);
+  const summary = calculateSummary(streams, manualLaps);
   const stats = calculateOverallStats(streams);
   const zones = calculateZoneDistribution(streams, athleteZones);
-  const workoutType = detectWorkoutType(intervals, zones?.heart_rate ?? []);
+  const workoutType = detectWorkoutType(
+    sportType,
+    zones?.heart_rate ?? [],
+    manualLaps
+  );
 
   const response = {
     activity_id: input.activity_id,
+    sport_type: sportType,
     workout_type: workoutType,
-    workout_type_description: WORKOUT_TYPE_DESCRIPTIONS[workoutType],
+    workout_type_description:
+      WORKOUT_TYPE_DESCRIPTIONS[workoutType] || `${sportType} activity`,
     summary,
     overall_stats: stats,
     zones,
-    intervals,
+    manual_laps: manualLaps.length > 0 ? manualLaps : undefined,
   };
 
   return [{ type: "text", text: JSON.stringify(response) }];
