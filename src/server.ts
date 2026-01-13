@@ -89,9 +89,10 @@ export function createMcpServer(stravaClient: StravaClient) {
         "max_speed, average_heartrate, max_heartrate, average_watts, kudos_count, comment_count. " +
         "Example queries:\n" +
         "- 'my last 5 runs' -> limit=5 (no date filters needed)\n" +
-        "- 'activities this week' -> after='2024-01-08'\n" +
+        "- 'activities this week' -> after='<this monday>'\n" +
+        "- 'activities last week' -> after='<previous monday>', before='<previous sunday end>' (Mon-Sun calendar week)\n" +
         "- 'rides in January' -> after='2024-01-01', before='2024-02-01'\n" +
-        "Tip: For recent activities, just use limit. Only add date filters for specific ranges.",
+        "Tip: For recent activities, just use limit. 'Last week' means the previous calendar week (Monday to Sunday).",
       inputSchema: listActivitiesSchema,
     },
     async (input) => ({
