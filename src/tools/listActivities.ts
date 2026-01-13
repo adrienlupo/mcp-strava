@@ -1,34 +1,41 @@
 import { z } from "zod";
 import { StravaClient } from "src/strava/client.js";
+import { isoToUnixTimestamp, getWeekRange } from "src/utils/dateService.js";
 import type { TextContent } from "@modelcontextprotocol/sdk/types.js";
 
 export const listActivitiesSchema = z.object({
   limit: z
     .number()
     .min(1)
-    .max(50)
+    .max(200)
     .default(10)
     .describe(
-      "Maximum number of activities to return (1-50, default: 10). " +
-        "For 'recent' or 'last N' queries, just set this limit without date filters. " +
-        "Examples: limit=5 for 'my last 5 runs', limit=20 for 'recent activities'."
+      "Maximum number of activities to return (1-200, default: 10). " +
+        "For 'recent' or 'last N' queries, set this limit without date filters. " +
+        "Ignored when week_offset is set or both before/after are provided (fetches all in range)."
+    ),
+  week_offset: z
+    .number()
+    .int()
+    .optional()
+    .describe(
+      "Get activities from a specific calendar week (Monday-Sunday). " +
+        "0 = this week, -1 = last week, -2 = two weeks ago, etc. " +
+        "PREFERRED for week-based queries. When set, 'before' and 'after' are ignored."
     ),
   before: z
-    .number()
+    .string()
     .optional()
     .describe(
-      "Return activities before this Unix timestamp (seconds since epoch). " +
-        "Example: 1704067200 = Jan 1, 2024 00:00:00 UTC. " +
-        "Use with 'after' for date ranges. Omit for most recent activities."
+      "ISO date string (e.g., '2024-12-31'). Activities before this date (exclusive). " +
+        "Ignored if week_offset is set. Use for custom date ranges only."
     ),
   after: z
-    .number()
+    .string()
     .optional()
     .describe(
-      "Return activities after this Unix timestamp (seconds since epoch). " +
-        "Example: 1701388800 = Dec 1, 2023 00:00:00 UTC. " +
-        "Only use when explicitly filtering by date range (e.g., 'activities this month'). " +
-        "Omit for 'recent' or 'last N' queries - just use limit instead."
+      "ISO date string (e.g., '2024-01-01'). Activities after this date. " +
+        "Ignored if week_offset is set. Use for custom date ranges only."
     ),
   page: z
     .number()
@@ -45,10 +52,28 @@ export async function listActivities(
   client: StravaClient,
   input: z.infer<typeof listActivitiesSchema>
 ): Promise<TextContent[]> {
+  let before: number | undefined;
+  let after: number | undefined;
+  let perPage = input.limit;
+
+  if (input.week_offset !== undefined) {
+    const weekRange = getWeekRange(input.week_offset);
+    after = weekRange.after;
+    before = weekRange.before;
+    perPage = 200; // Fetch all activities in the date range
+  } else {
+    before = isoToUnixTimestamp(input.before);
+    after = isoToUnixTimestamp(input.after);
+    // When both before and after are set, fetch all in range
+    if (before !== undefined && after !== undefined) {
+      perPage = 200;
+    }
+  }
+
   const activities = await client.listActivities({
-    per_page: input.limit,
-    before: input.before,
-    after: input.after,
+    per_page: perPage,
+    before,
+    after,
     page: input.page,
   });
 

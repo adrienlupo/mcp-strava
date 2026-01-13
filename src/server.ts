@@ -89,9 +89,13 @@ export function createMcpServer(stravaClient: StravaClient) {
         "max_speed, average_heartrate, max_heartrate, average_watts, kudos_count, comment_count. " +
         "Example queries:\n" +
         "- 'my last 5 runs' -> limit=5 (no date filters needed)\n" +
-        "- 'activities this week' -> after=<monday_timestamp>\n" +
-        "- 'rides in January' -> after=<jan1>, before=<feb1>\n" +
-        "Tip: For recent activities, just use limit. Only add date filters for specific ranges.",
+        "- 'rides in January' -> after='2024-01-01', before='2024-02-01'\n" +
+        "For week-based queries, USE week_offset (calendar weeks are Monday-Sunday):\n" +
+        "- 'this week' -> week_offset=0\n" +
+        "- 'last week' -> week_offset=-1\n" +
+        "- '2 weeks ago' -> week_offset=-2\n" +
+        "- '3 weeks ago' -> week_offset=-3\n" +
+        "week_offset handles all date calculations automatically. Prefer it over manual before/after dates.",
       inputSchema: listActivitiesSchema,
     },
     async (input) => ({

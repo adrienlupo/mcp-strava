@@ -6,8 +6,20 @@ Model Context Protocol server for Strava API integration. Built with TypeScript 
 
 - `get_athlete_profile` - Get authenticated athlete's profile
 - `get_athlete_stats` - Get activity statistics (recent, YTD, all-time)
+- `get_athlete_zones` - Get heart rate and power zones
 - `list_activities` - List activities with filtering and pagination
 - `get_activity_detail` - Get detailed activity information by ID
+
+### Date Filtering
+
+The `list_activities` tool accepts ISO date strings for filtering:
+
+```
+after: "2024-01-01"     # Activities after this date
+before: "2024-12-31"    # Activities before this date
+```
+
+For recent activities, just use `limit` without date filters.
 
 ## Setup with Claude Desktop
 
@@ -29,7 +41,7 @@ Add to your Claude Desktop config (`Claude/claude_desktop_config.json`):
 ```json
 {
   "mcpServers": {
-    "Strava": {
+    "Strava MCP": {
       "command": "node",
       "args": ["/absolute/path/to/strava-mcp/dist/index.js"],
       "env": {
