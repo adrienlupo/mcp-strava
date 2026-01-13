@@ -24,12 +24,12 @@ npm run build
 
 ### 3. Configure Claude Desktop
 
-Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS, `%APPDATA%\Claude\claude_desktop_config.json` on Windows):
+Add to your Claude Desktop config (`Claude/claude_desktop_config.json`):
 
 ```json
 {
   "mcpServers": {
-    "strava": {
+    "Strava": {
       "command": "node",
       "args": ["/absolute/path/to/strava-mcp/dist/index.js"],
       "env": {
@@ -42,8 +42,6 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
   }
 }
 ```
-
-**Note:** Replace `/absolute/path/to/strava-mcp` with your actual project path.
 
 ### 4. Authorize with Strava
 
