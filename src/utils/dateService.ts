@@ -6,21 +6,19 @@ dayjs.extend(weekday);
 dayjs.extend(updateLocale);
 dayjs.updateLocale("en", { weekStart: 1 });
 
-export function getWeekRange(weekOffset: number): { after: number; before: number } {
-  const targetMonday = dayjs().startOf("week").add(weekOffset, "week");
+export function getWeekRange(weekOffset: number): { from: string; to: string } {
+  const monday = dayjs().startOf("week").add(weekOffset, "week");
+  const sunday = monday.add(6, "day");
   return {
-    after: targetMonday.unix(),
-    before: targetMonday.add(1, "week").unix(),
+    from: monday.format("YYYY-MM-DD"),
+    to: sunday.format("YYYY-MM-DD"),
   };
 }
 
-export function isoToUnixTimestamp(isoDate: string | undefined): number | undefined {
-  if (!isoDate) return undefined;
-
+export function isoToUnixTimestamp(isoDate: string, endOfDay = false): number {
   const parsed = dayjs(isoDate);
   if (!parsed.isValid()) {
     throw new Error(`Invalid date format: "${isoDate}". Use ISO format (e.g., "2024-01-01").`);
   }
-
-  return parsed.unix();
+  return endOfDay ? parsed.add(1, "day").unix() : parsed.unix();
 }
