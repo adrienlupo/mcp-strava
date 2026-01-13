@@ -6,7 +6,12 @@ export const getActivityDetailSchema = z.object({
   activity_id: z
     .number()
     .positive()
-    .describe("The Strava activity ID to retrieve details for"),
+    .describe(
+      "The unique Strava activity ID to retrieve details for. " +
+        "Find this ID by first calling list_activities, or from a Strava URL " +
+        "(e.g., strava.com/activities/12345678 -> activity_id=12345678). " +
+        "Returns comprehensive data: splits, laps, segments, gear, and calories."
+    ),
 });
 
 export async function getActivityDetail(

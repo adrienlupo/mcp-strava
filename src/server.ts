@@ -47,7 +47,11 @@ export function createMcpServer(stravaClient: StravaClient) {
     "get_athlete_profile",
     {
       description:
-        "Get the authenticated athlete's Strava profile information. Returns personal details including: full name, username, location (city, state, country), bio, gender, profile photos, account creation date, and Summit membership status. Use this when the user asks about their profile, account information, or personal details. No parameters required.",
+        "Get the authenticated athlete's Strava profile information. " +
+        "Returns: firstname, lastname, username, bio, city, state, country, sex, " +
+        "profile photo URLs, created_at, premium/Summit status, weight, and measurement preferences. " +
+        "Use when the user asks about their profile, account info, or 'who am I on Strava'. " +
+        "No parameters required.",
       inputSchema: getAthleteProfileSchema,
     },
     async (input) => ({
@@ -59,7 +63,15 @@ export function createMcpServer(stravaClient: StravaClient) {
     "get_athlete_stats",
     {
       description:
-        "Get comprehensive activity statistics for the authenticated athlete. Returns aggregated metrics broken down by sport type (ride, run, swim) across three time periods: recent (last 4 weeks), year-to-date, and all-time. Includes total counts, distance, moving time, elapsed time, and elevation gain for each category. Use this when the user asks about their overall performance, totals, records, or wants to compare different time periods. No parameters required.",
+        "Get comprehensive activity statistics for the authenticated athlete. " +
+        "Returns aggregated metrics by sport type (ride, run, swim) across three time periods:\n" +
+        "- recent_ride/run/swim_totals: Last 4 weeks\n" +
+        "- ytd_ride/run/swim_totals: Year-to-date\n" +
+        "- all_ride/run/swim_totals: All-time\n" +
+        "Each includes: count, distance (m), moving_time (s), elapsed_time (s), elevation_gain (m). " +
+        "Also includes biggest_ride_distance and biggest_climb_elevation_gain. " +
+        "Use for 'how far have I run this year', 'my cycling totals', or 'compare my stats'. " +
+        "No parameters required.",
       inputSchema: getAthleteStatsSchema,
     },
     async (input) => ({
@@ -71,7 +83,15 @@ export function createMcpServer(stravaClient: StravaClient) {
     "list_activities",
     {
       description:
-        "List activities for the authenticated athlete with optional filtering and pagination. Returns activity summaries including: activity name, type, date, distance, duration, elevation gain, average speed, heart rate, power data, kudos count, and summary statistics. Use this when the user wants to see their recent activities, search for specific workouts, or analyze activity history. Parameters: limit (1-200, default 30), before (Unix timestamp), after (Unix timestamp), page (for pagination). Supports queries like 'show my last 10 runs', 'activities from last month', or 'all workouts this week'.",
+        "List activities for the authenticated athlete with optional filtering and pagination. " +
+        "Returns activity summaries: id, name, type, sport_type, start_date, distance (m), " +
+        "moving_time (s), elapsed_time (s), total_elevation_gain (m), average_speed (m/s), " +
+        "max_speed, average_heartrate, max_heartrate, average_watts, kudos_count, comment_count. " +
+        "Example queries:\n" +
+        "- 'my last 5 runs' -> limit=5 (no date filters needed)\n" +
+        "- 'activities this week' -> after=<monday_timestamp>\n" +
+        "- 'rides in January' -> after=<jan1>, before=<feb1>\n" +
+        "Tip: For recent activities, just use limit. Only add date filters for specific ranges.",
       inputSchema: listActivitiesSchema,
     },
     async (input) => ({
@@ -86,7 +106,13 @@ export function createMcpServer(stravaClient: StravaClient) {
     "get_activity_detail",
     {
       description:
-        "Get detailed information about a specific activity by its ID. Returns comprehensive data including: full activity metrics (distance, time, pace, speed, elevation), split-by-split breakdown, lap data, segment efforts, gear used, photos, route map polyline, calories burned, heart rate zones, power zones, and similar activities. Use this when the user asks about a specific workout, wants detailed analysis of an activity, or references a particular activity by ID or name (search with list_activities first to get the ID). Required parameter: activity_id (number).",
+        "Get detailed information about a specific activity by its ID. " +
+        "Returns comprehensive data: name, description, distance, moving_time, elapsed_time, " +
+        "total_elevation_gain, calories, average_speed, max_speed, average_heartrate, max_heartrate, " +
+        "average_watts, weighted_average_watts, kilojoules, average_cadence, splits_metric, " +
+        "splits_standard, laps, segment_efforts, gear, device_name, and embed_token. " +
+        "Workflow: First call list_activities to find the activity ID, then call this for details. " +
+        "Use for 'analyze my last run', 'show lap times', or 'what gear did I use'.",
       inputSchema: getActivityDetailSchema,
     },
     async (input) => ({
@@ -101,7 +127,14 @@ export function createMcpServer(stravaClient: StravaClient) {
     "get_athlete_zones",
     {
       description:
-        "Get the authenticated athlete's heart rate and power zones. Returns zone configuration for both heart rate (if configured) and power (if available). Heart rate zones include custom zone settings and min/max values for each zone. Power zones include FTP-based zone ranges. Use this when the user asks about their training zones, heart rate zones, power zones, or FTP settings. Requires profile:read_all scope. No parameters required.",
+        "Get the authenticated athlete's heart rate and power zones. " +
+        "Returns zone configuration:\n" +
+        "- heart_rate: custom_zones (boolean), zones[] with min/max bpm for each zone (typically 5 zones)\n" +
+        "- power: zones[] with min/max watts for each zone (FTP-based, typically 7 zones)\n" +
+        "Use for 'what are my HR zones', 'show my power zones', 'what is my FTP', " +
+        "or to interpret zone data from activities. " +
+        "Note: Requires profile:read_all scope. Power zones require a power meter. " +
+        "No parameters required.",
       inputSchema: getAthleteZonesSchema,
     },
     async (input) => ({
