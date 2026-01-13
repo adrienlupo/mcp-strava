@@ -90,12 +90,12 @@ export function createMcpServer(stravaClient: StravaClient) {
         "Example queries:\n" +
         "- 'my last 5 runs' -> limit=5 (no date filters needed)\n" +
         "- 'rides in January' -> after='2024-01-01', before='2024-02-01'\n" +
-        "IMPORTANT - Calendar week calculation (weeks are Monday to Sunday):\n" +
-        "Example: Today is Tuesday 2025-01-14. Find the Monday of current week first (2025-01-13).\n" +
-        "- 'this week' -> after='2025-01-13' (this Monday)\n" +
-        "- 'last week' -> after='2025-01-06', before='2025-01-13' (prev Monday to this Monday)\n" +
-        "- '2 weeks ago' -> after='2024-12-30', before='2025-01-06' (2 Mondays back to prev Monday)\n" +
-        "Always calculate from Monday to Monday. 'before' is exclusive so it captures through Sunday.",
+        "For week-based queries, USE week_offset (calendar weeks are Monday-Sunday):\n" +
+        "- 'this week' -> week_offset=0\n" +
+        "- 'last week' -> week_offset=-1\n" +
+        "- '2 weeks ago' -> week_offset=-2\n" +
+        "- '3 weeks ago' -> week_offset=-3\n" +
+        "week_offset handles all date calculations automatically. Prefer it over manual before/after dates.",
       inputSchema: listActivitiesSchema,
     },
     async (input) => ({
