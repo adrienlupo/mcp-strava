@@ -60,7 +60,7 @@ export class TokenManager {
       return tokens.access_token;
     }
 
-    console.log("Access token expired, refreshing...");
+    console.error("Access token expired, refreshing...");
     const newTokens = await refreshAccessToken(tokens.refresh_token);
     this.saveTokens(newTokens);
 
