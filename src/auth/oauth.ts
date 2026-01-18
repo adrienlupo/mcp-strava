@@ -11,12 +11,13 @@ export interface StravaTokens {
 const STRAVA_AUTH_URL = "https://www.strava.com/oauth/authorize";
 const STRAVA_TOKEN_URL = "https://www.strava.com/api/v3/oauth/token";
 
-export function getAuthorizationUrl(): string {
+export function getAuthorizationUrl(state: string): string {
   const params = new URLSearchParams({
     client_id: config.stravaClientId,
     redirect_uri: config.stravaRedirectUri,
     response_type: "code",
     scope: "read,activity:read_all,profile:read_all",
+    state,
   });
 
   return `${STRAVA_AUTH_URL}?${params.toString()}`;

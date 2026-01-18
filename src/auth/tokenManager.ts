@@ -41,7 +41,9 @@ export class TokenManager {
   saveTokens(tokens: StravaTokens): void {
     try {
       this.ensureDataDirectory();
-      fs.writeFileSync(this.tokenPath, JSON.stringify(tokens, null, 2));
+      fs.writeFileSync(this.tokenPath, JSON.stringify(tokens, null, 2), {
+        mode: 0o600,
+      });
     } catch (error) {
       throw new Error(`Failed to save tokens: ${(error as Error).message}`);
     }
