@@ -1,8 +1,4 @@
 #!/usr/bin/env node
-import dotenv from "dotenv";
-
-dotenv.config();
-
 import express from "express";
 import { getAuthorizationUrl, exchangeCodeForTokens } from "./auth/oauth.js";
 import { TokenManager } from "./auth/tokenManager.js";
