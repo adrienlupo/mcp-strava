@@ -20,16 +20,21 @@ Minimalist Strava integration for Claude.
 | `list_activities`     | Browse with date filtering    |
 | `get_activity_detail` | Full workout breakdown        |
 
-### Date Filtering
+### Workout Analysis
 
-The `list_activities` tool accepts ISO date strings for filtering:
+Beyond raw Strava data, `get_activity_detail` provides computed insights:
 
-```
-after: "2024-01-01"     # Activities after this date
-before: "2024-12-31"    # Activities before this date
-```
+| Analysis | What it does |
+| -------- | ------------ |
+| **Zone Distribution** | Time spent in each HR/power zone with percentages |
+| **Workout Type Detection** | Auto-classifies intensity (recovery, base, tempo, threshold, vo2max) |
+| **Manual Lap Analysis** | Extracts user-created laps with per-lap metrics |
+| **Normalized Power** | Training Peaks algorithm for cycling power |
+| **Elevation Calculations** | Computed gain/loss from altitude stream |
 
-For recent activities, just use `limit` without date filters.
+**Per-lap metrics include:** duration, distance, pace, avg/max HR, power, cadence, elevation gain
+
+**Workout detection uses:** HR zone distribution, time thresholds, and lap structure to classify training intensity automatically.
 
 ## Quick Start with npx
 
