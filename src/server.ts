@@ -51,11 +51,8 @@ export function createMcpServer(stravaClient: StravaClient) {
     "get_athlete_profile",
     {
       description:
-        "Get the authenticated athlete's Strava profile information. " +
-        "Returns: firstname, lastname, username, bio, city, state, country, sex, " +
-        "profile photo URLs, created_at, premium/Summit status, weight, and measurement preferences. " +
-        "Use when the user asks about their profile, account info, or 'who am I on Strava'. " +
-        "No parameters required.",
+        "Get authenticated athlete's Strava profile. " +
+        "Returns: name, username, bio, location, weight, premium status, measurement preferences.",
       inputSchema: getAthleteProfileSchema,
     },
     async (input) => ({
@@ -67,15 +64,9 @@ export function createMcpServer(stravaClient: StravaClient) {
     "get_athlete_stats",
     {
       description:
-        "Get comprehensive activity statistics for the authenticated athlete. " +
-        "Returns aggregated metrics by sport type (ride, run, swim) across three time periods:\n" +
-        "- recent_ride/run/swim_totals: Last 4 weeks\n" +
-        "- ytd_ride/run/swim_totals: Year-to-date\n" +
-        "- all_ride/run/swim_totals: All-time\n" +
-        "Each includes: count, distance (m), moving_time (s), elapsed_time (s), elevation_gain (m). " +
-        "Also includes biggest_ride_distance and biggest_climb_elevation_gain. " +
-        "Use for 'how far have I run this year', 'my cycling totals', or 'compare my stats'. " +
-        "No parameters required.",
+        "Get aggregated activity statistics by sport type. " +
+        "Returns: recent (4 weeks), YTD, all-time totals for ride/run/swim. " +
+        "Each: count, distance (m), moving_time (s), elevation_gain (m).",
       inputSchema: getAthleteStatsSchema,
     },
     async (input) => ({
@@ -87,19 +78,10 @@ export function createMcpServer(stravaClient: StravaClient) {
     "list_activities",
     {
       description:
-        "List activities for the authenticated athlete with optional filtering and pagination. " +
-        "Returns activity summaries: id, name, type, sport_type, start_date, distance (m), " +
-        "moving_time (s), elapsed_time (s), total_elevation_gain (m), average_speed (m/s), " +
-        "max_speed, average_heartrate, max_heartrate, average_watts, kudos_count, comment_count. " +
-        "Example queries:\n" +
-        "- 'my last 5 runs' -> limit=5 (no date filters needed)\n" +
-        "- 'rides in January' -> after='2024-01-01', before='2024-02-01'\n" +
-        "For week-based queries, USE week_offset (calendar weeks are Monday-Sunday):\n" +
-        "- 'this week' -> week_offset=0\n" +
-        "- 'last week' -> week_offset=-1\n" +
-        "- '2 weeks ago' -> week_offset=-2\n" +
-        "- '3 weeks ago' -> week_offset=-3\n" +
-        "week_offset handles all date calculations automatically. Prefer it over manual before/after dates.",
+        "List activities with filtering and pagination. " +
+        "Returns: id, name, type, sport_type, start_date, distance (m), moving_time (s), " +
+        "elapsed_time (s), total_elevation_gain (m), average_speed (m/s), heartrate, watts. " +
+        "Use week_offset for calendar weeks (0=this week, -1=last week). Monday-Sunday.",
       inputSchema: listActivitiesSchema,
     },
     async (input) => ({
@@ -114,14 +96,9 @@ export function createMcpServer(stravaClient: StravaClient) {
     "get_activity_detail",
     {
       description:
-        "Get summary information about a specific activity by its ID. " +
-        "Returns: name, description, distance, moving_time, elapsed_time, " +
-        "total_elevation_gain, calories, average_speed, max_speed, average_heartrate, max_heartrate, " +
-        "average_watts, weighted_average_watts, kilojoules, average_cadence, splits_metric, " +
-        "splits_standard, laps, segment_efforts, gear, device_name. " +
-        "Workflow: First call list_activities to find the activity ID, then call this for summary. " +
-        "For DETAILED ANALYSIS (pacing, HR drift, power curves, interval analysis), " +
-        "also call get_activity_streams to get second-by-second time-series data.",
+        "Get activity metadata by ID. " +
+        "Returns: name, description, splits, laps, segment_efforts, gear, calories, device. " +
+        "For time-series analysis, use get_activity_streams instead.",
       inputSchema: getActivityDetailSchema,
     },
     async (input) => ({
@@ -136,14 +113,9 @@ export function createMcpServer(stravaClient: StravaClient) {
     "get_athlete_zones",
     {
       description:
-        "Get the authenticated athlete's heart rate and power zones. " +
-        "Returns zone configuration:\n" +
-        "- heart_rate: custom_zones (boolean), zones[] with min/max bpm for each zone (typically 5 zones)\n" +
-        "- power: zones[] with min/max watts for each zone (FTP-based, typically 7 zones)\n" +
-        "Use for 'what are my HR zones', 'show my power zones', 'what is my FTP', " +
-        "or to interpret zone data from activities. " +
-        "Note: Requires profile:read_all scope. Power zones require a power meter. " +
-        "No parameters required.",
+        "Get athlete's configured HR and power zones from Strava. " +
+        "Returns: heart_rate.zones[], power.zones[] with min/max for each zone. " +
+        "Requires profile:read_all scope.",
       inputSchema: getAthleteZonesSchema,
     },
     async (input) => ({
@@ -155,19 +127,10 @@ export function createMcpServer(stravaClient: StravaClient) {
     "get_activity_streams",
     {
       description:
-        "ALWAYS USE THIS for detailed activity analysis. " +
-        "Returns second-by-second time-series data essential for in-depth workout analysis:\n" +
-        "- time, distance, altitude, heartrate, cadence, watts, velocity_smooth, grade_smooth, latlng\n\n" +
-        "Response includes:\n" +
-        "- statistics: min/max/avg, normalized_power (watts), speed in km/h\n" +
-        "- data: paginated time-series arrays\n\n" +
-        "USE THIS TOOL when user asks for:\n" +
-        "- 'analyze my run/ride' or 'detailed analysis'\n" +
-        "- pacing consistency, HR drift, cardiac decoupling\n" +
-        "- power analysis, normalized power, interval breakdown\n" +
-        "- zone distribution, cadence patterns, elevation impact\n" +
-        "- any deep dive into workout metrics\n\n" +
-        "Workflow: get activity_id from list_activities, then fetch streams for analysis.",
+        "Returns second-by-second time-series data with pre-computed analysis. " +
+        "Response: { workout_type, summary, overall_stats, zones, manual_laps }. " +
+        "workout_type: auto-detected (recovery/base/tempo/threshold/vo2max/anaerobic). " +
+        "Requires activity_id from list_activities.",
       inputSchema: getActivityStreamsSchema,
     },
     async (input) => ({
