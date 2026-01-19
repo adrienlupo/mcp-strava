@@ -1,14 +1,24 @@
 # Strava MCP Server
 
-Model Context Protocol server for Strava API integration. Built with TypeScript and uses stdio transport for Claude Desktop.
+Minimalist Strava integration for Claude.
+
+5 focused tools. One-time auth. Zero bloat.
+
+## What You Can Ask Claude
+
+- "How was my training this week vs last?"
+- "What's my average heart rate on tempo runs?"
+- "Break down yesterday's workout by zones"
 
 ## Tools
 
-- `get_athlete_profile` - Get authenticated athlete's profile
-- `get_athlete_stats` - Get activity statistics (recent, YTD, all-time)
-- `get_athlete_zones` - Get heart rate and power zones
-- `list_activities` - List activities with filtering and pagination
-- `get_activity_detail` - Get detailed activity information by ID
+| Tool | What it does |
+|------|--------------|
+| `get_athlete_profile` | Your profile info |
+| `get_athlete_stats` | Totals: recent, YTD, all-time |
+| `get_athlete_zones` | HR and power zones |
+| `list_activities` | Browse with date filtering |
+| `get_activity_detail` | Full workout breakdown |
 
 ### Date Filtering
 
