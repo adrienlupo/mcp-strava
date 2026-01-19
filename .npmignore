@@ -1,0 +1,20 @@
+# Source files (only publish dist/)
+src/
+
+# Build configuration
+tsconfig.json
+tsup.config.ts
+
+# Environment files
+.env
+.env.example
+.env.*
+
+# Local data
+data/
+
+# Development files
+.git/
+.github/
+.vscode/
+*.log

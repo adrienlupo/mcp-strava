@@ -21,7 +21,61 @@ before: "2024-12-31"    # Activities before this date
 
 For recent activities, just use `limit` without date filters.
 
-## Setup with Claude Desktop
+## Quick Start with npx
+
+### 1. Create Strava API Application
+
+Visit https://www.strava.com/settings/api and create an application to get your Client ID and Secret.
+
+### 2. Configure Claude Desktop
+
+Add to your Claude Desktop config (`claude_desktop_config.json`):
+
+**macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+```bash
+open ~/Library/Application\ Support/Claude/
+```
+
+**Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "strava": {
+      "command": "npx",
+      "args": ["-y", "mcp-strava"],
+      "env": {
+        "STRAVA_CLIENT_ID": "your_client_id",
+        "STRAVA_CLIENT_SECRET": "your_client_secret",
+        "STRAVA_REDIRECT_URI": "http://localhost:3000/auth/callback"
+      }
+    }
+  }
+}
+```
+
+### 3. Authorize with Strava (one-time setup)
+
+Run the auth server to authorize with your Strava account:
+
+```bash
+STRAVA_CLIENT_ID=your_client_id \
+STRAVA_CLIENT_SECRET=your_client_secret \
+STRAVA_REDIRECT_URI=http://localhost:3000/auth/callback \
+npx mcp-strava-auth
+```
+
+Visit `http://localhost:3000/auth/strava` in your browser to authorize. After successful authorization, stop the server (Ctrl+C).
+
+Tokens are stored in `~/.strava-mcp/tokens.json` by default.
+
+### 4. Restart Claude Desktop
+
+Restart Claude Desktop to load the MCP server.
+
+## Manual Setup (Alternative)
+
+If you prefer to clone and build locally:
 
 ### 1. Create Strava API Application
 
@@ -30,25 +84,33 @@ Visit https://www.strava.com/settings/api and create an application to get your 
 ### 2. Build the Project
 
 ```bash
+git clone https://github.com/adrienlupo/mcp-strava.git
+cd mcp-strava
 npm install
 npm run build
 ```
 
 ### 3. Configure Claude Desktop
 
-Add to your Claude Desktop config (`Claude/claude_desktop_config.json`):
+Add to your Claude Desktop config (`claude_desktop_config.json`):
+
+**macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+```bash
+open ~/Library/Application\ Support/Claude/
+```
+
+**Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
 
 ```json
 {
   "mcpServers": {
-    "Strava MCP": {
+    "strava": {
       "command": "node",
-      "args": ["/absolute/path/to/strava-mcp/dist/index.js"],
+      "args": ["/absolute/path/to/mcp-strava/dist/index.js"],
       "env": {
         "STRAVA_CLIENT_ID": "your_client_id",
         "STRAVA_CLIENT_SECRET": "your_client_secret",
-        "STRAVA_REDIRECT_URI": "http://localhost:3000/auth/callback",
-        "TOKEN_FILE_PATH": "/absolute/path/to/strava-mcp/data/tokens.json"
+        "STRAVA_REDIRECT_URI": "http://localhost:3000/auth/callback"
       }
     }
   }
@@ -63,7 +125,6 @@ Create a `.env` file in the project root with your Strava credentials:
 STRAVA_CLIENT_ID=your_client_id
 STRAVA_CLIENT_SECRET=your_client_secret
 STRAVA_REDIRECT_URI=http://localhost:3000/auth/callback
-TOKEN_FILE_PATH=/absolute/path/to/strava-mcp/data/tokens.json
 ```
 
 Then run the authorization server:

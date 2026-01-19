@@ -1,12 +1,16 @@
 {
-  "name": "strava-mcp-server",
+  "name": "mcp-strava",
   "version": "1.0.0",
   "type": "module",
   "description": "MCP server for Strava API integration",
   "main": "dist/index.js",
   "bin": {
-    "strava-mcp-server": "dist/index.js"
+    "mcp-strava": "dist/index.js",
+    "mcp-strava-auth": "dist/auth-server.js"
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "dev": "tsx src/index.ts",
     "build": "tsup",
@@ -17,8 +21,18 @@
   "keywords": [
     "mcp",
     "strava",
-    "model-context-protocol"
+    "model-context-protocol",
+    "claude",
+    "ai",
+    "fitness",
+    "cycling",
+    "running"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adrienlupo/mcp-strava.git"
+  },
+  "homepage": "https://github.com/adrienlupo/mcp-strava#readme",
   "author": "",
   "license": "MIT",
   "dependencies": {
