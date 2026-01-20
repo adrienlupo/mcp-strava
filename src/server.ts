@@ -136,7 +136,6 @@ export function createMcpServer(stravaClient: StravaClient) {
         "Analyze activity time-series data with computed metrics (no raw streams returned). " +
         "Returns: zone_distribution (HR/power time-in-zones by training zone name), " +
         "power_analysis (NP, avg power, variability index, IF), " +
-        "elevation_profile (gain/loss, detected climbs with avg HR/power, terrain distribution), " +
         "extended_stats (min/max for HR, power, cadence). " +
         "Requires activity_id from list_activities. Needs athlete zones configured for zone_distribution.",
       inputSchema: getActivityStreamsSchema,

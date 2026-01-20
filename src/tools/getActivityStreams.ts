@@ -5,7 +5,6 @@ import type { StreamType } from "src/strava/types.js";
 import {
   calculateZoneDistribution,
   calculatePowerAnalysis,
-  calculateElevationProfile,
   calculateExtendedStats,
 } from "src/utils/workoutAnalysis.js";
 
@@ -15,7 +14,6 @@ const REQUIRED_STREAMS: StreamType[] = [
   "heartrate",
   "cadence",
   "watts",
-  "altitude",
 ];
 
 export const getActivityStreamsSchema = z.object({
@@ -24,8 +22,7 @@ export const getActivityStreamsSchema = z.object({
     .positive()
     .describe(
       "Activity ID. Returns zone distribution, power analysis (NP/VI), " +
-        "elevation profile, and min/max stats - " +
-        "insights not available in get_activity_detail."
+        "and min/max stats - insights not available in get_activity_detail."
     ),
 });
 
@@ -54,7 +51,6 @@ export async function getActivityStreams(
 
   const zones = calculateZoneDistribution(streams, athleteZones);
   const powerAnalysis = calculatePowerAnalysis(streams);
-  const elevationProfile = calculateElevationProfile(streams);
   const extendedStats = calculateExtendedStats(streams);
 
   const response: Record<string, unknown> = {
@@ -67,10 +63,6 @@ export async function getActivityStreams(
 
   if (powerAnalysis) {
     response.power_analysis = powerAnalysis;
-  }
-
-  if (elevationProfile) {
-    response.elevation_profile = elevationProfile;
   }
 
   if (extendedStats) {
