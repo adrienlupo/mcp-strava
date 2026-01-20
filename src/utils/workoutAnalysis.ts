@@ -1,57 +1,67 @@
-import type {
-  StreamSet,
-  AthleteZones,
-  Zone,
-  Lap,
-} from "src/strava/types.js";
+import type { StreamSet, AthleteZones, Zone } from "src/strava/types.js";
 import { HR_ZONE_NAMES, POWER_ZONE_NAMES } from "src/strava/constants.js";
 import {
   avg,
   minMaxAvg,
   elevationDelta,
-  velocityToPace,
   calculateNormalizedPower,
 } from "src/utils/math.js";
 
 export interface ZoneAnalysis {
   zone: number;
   name: string;
-  min: number;
-  max: number;
-  time_seconds: number;
+  range: string;
+  minutes: number;
   percent: number;
 }
 
 export interface ZoneDistribution {
   heart_rate?: ZoneAnalysis[];
   power?: ZoneAnalysis[];
-  zones_source: "athlete_configured" | "activity_estimated";
 }
 
-export interface ManualLap {
-  lap_number: number;
-  name: string;
-  duration: number;
-  distance: number;
-  avg_pace: string;
-  avg_heartrate?: number;
-  max_heartrate?: number;
-  avg_power?: number;
-  avg_cadence?: number;
-  elevation_gain?: number;
+export interface PowerAnalysis {
+  normalized_power: number;
+  average_power: number;
+  variability_index: number;
+  intensity_factor?: number;
 }
 
-export interface WorkoutSummary {
-  total_duration: number;
-  total_distance: number;
-  total_elevation_gain: number;
-  manual_laps_count: number;
-  avg_pace: string;
-  avg_heartrate?: number;
-  max_heartrate?: number;
+export interface DriftAnalysis {
+  first_half: { avg_hr?: number; avg_power?: number };
+  second_half: { avg_hr?: number; avg_power?: number };
+  hr_drift_percent?: number;
+  power_fade_percent?: number;
+}
+
+export interface Climb {
+  start_km: number;
+  end_km: number;
+  gain: number;
+  avg_grade: number;
+  avg_hr?: number;
   avg_power?: number;
-  normalized_power?: number;
-  avg_cadence?: number;
+}
+
+export interface TerrainDistribution {
+  climbing: { percent: number; avg_grade: number };
+  flat: { percent: number; avg_grade: number };
+  descending: { percent: number; avg_grade: number };
+}
+
+export interface ElevationProfile {
+  total_gain: number;
+  total_loss: number;
+  min_elevation: number;
+  max_elevation: number;
+  climbs: Climb[];
+  terrain_distribution: TerrainDistribution;
+}
+
+export interface ExtendedStats {
+  heartrate?: { min: number; max: number };
+  power?: { min: number; max: number };
+  cadence?: { min: number; max: number };
 }
 
 export interface OverallStats {
@@ -60,54 +70,6 @@ export interface OverallStats {
   power?: { min: number; max: number; avg: number; normalized: number };
   cadence?: { min: number; max: number; avg: number };
   altitude?: { min: number; max: number; gain: number; loss: number };
-}
-
-export type WorkoutType =
-  | "recovery"
-  | "base"
-  | "tempo"
-  | "threshold"
-  | "vo2max"
-  | "anaerobic"
-  | string;
-
-export const WORKOUT_TYPE_DESCRIPTIONS: Record<string, string> = {
-  recovery: "Easy recovery session, primarily in Zone 1",
-  base: "Aerobic base building, primarily in Zone 2",
-  tempo: "Tempo effort, primarily in Zone 3",
-  threshold: "Threshold training, primarily in Zone 4",
-  vo2max: "VO2max work, primarily in Zone 5",
-  anaerobic: "Anaerobic/sprint work, maximal effort",
-};
-
-const ENDURANCE_SPORT_TYPES = [
-  "Run",
-  "Ride",
-  "Swim",
-  "VirtualRun",
-  "VirtualRide",
-  "Walk",
-  "Hike",
-  "TrailRun",
-  "MountainBikeRide",
-  "GravelRide",
-  "EBikeRide",
-  "Rowing",
-  "Kayaking",
-  "NordicSki",
-  "BackcountrySki",
-  "RollerSki",
-];
-
-const HIGH_INTENSITY_THRESHOLDS = {
-  anaerobic_z5: 5 * 60,
-  vo2max_z5: 8 * 60,
-  threshold_z4: 15 * 60,
-  threshold_z4z5: 20 * 60,
-};
-
-function isEnduranceSport(sportType: string): boolean {
-  return ENDURANCE_SPORT_TYPES.includes(sportType);
 }
 
 function getStream<T>(streams: StreamSet, type: string): T[] | null {
@@ -147,9 +109,8 @@ export function calculateTimeInZones(
   return zones.map((zone, i) => ({
     zone: i + 1,
     name: zoneNames[i] || `Zone ${i + 1}`,
-    min: zone.min,
-    max: zone.max === -1 ? Infinity : zone.max,
-    time_seconds: Math.round(zoneTimes[i]),
+    range: zone.max === -1 ? `${zone.min}+` : `${zone.min}-${zone.max}`,
+    minutes: Math.round((zoneTimes[i] / 60) * 10) / 10,
     percent: totalTime > 0 ? Math.round((zoneTimes[i] / totalTime) * 100) : 0,
   }));
 }
@@ -163,7 +124,7 @@ export function calculateZoneDistribution(
   const timeData = getStream<number>(streams, "time");
   if (!timeData) return null;
 
-  const result: ZoneDistribution = { zones_source: "athlete_configured" };
+  const result: ZoneDistribution = {};
 
   const hrData = getStream<number>(streams, "heartrate");
   if (hrData && athleteZones.heart_rate?.zones?.length) {
@@ -185,184 +146,318 @@ export function calculateZoneDistribution(
     );
   }
 
+  return Object.keys(result).length > 0 ? result : null;
+}
+
+export function calculatePowerAnalysis(
+  streams: StreamSet,
+  ftp?: number
+): PowerAnalysis | null {
+  const powerData = getStream<number>(streams, "watts");
+  if (!powerData) return null;
+
+  const validPower = powerData.filter((p) => p > 0);
+  if (validPower.length < 30) return null;
+
+  const avgPower = Math.round(avg(validPower));
+  const np = calculateNormalizedPower(validPower);
+
+  if (avgPower === 0) return null;
+
+  const result: PowerAnalysis = {
+    normalized_power: np,
+    average_power: avgPower,
+    variability_index: Math.round((np / avgPower) * 100) / 100,
+  };
+
+  if (ftp && ftp > 0) {
+    result.intensity_factor = Math.round((np / ftp) * 100) / 100;
+  }
+
   return result;
 }
 
-export function detectWorkoutType(
-  sportType: string,
-  hrZones: ZoneAnalysis[],
-  manualLaps: ManualLap[]
-): string {
-  if (!isEnduranceSport(sportType)) {
-    return sportType;
-  }
+export function calculateDriftAnalysis(streams: StreamSet): DriftAnalysis | null {
+  const timeData = getStream<number>(streams, "time");
+  if (!timeData || timeData.length < 10) return null;
 
-  if (!hrZones || hrZones.length === 0) {
-    return sportType;
-  }
+  const hrData = getStream<number>(streams, "heartrate");
+  const powerData = getStream<number>(streams, "watts");
 
-  const getZoneTime = (zone: number) =>
-    hrZones.find((z) => z.zone === zone)?.time_seconds || 0;
-  const getZonePercent = (zone: number) =>
-    hrZones.find((z) => z.zone === zone)?.percent || 0;
+  if (!hrData && !powerData) return null;
 
-  const z1Time = getZoneTime(1);
-  const z2Time = getZoneTime(2);
-  const z3Time = getZoneTime(3);
-  const z4Time = getZoneTime(4);
-  const z5Time = getZoneTime(5);
+  const midpoint = Math.floor(timeData.length / 2);
 
-  const z1 = getZonePercent(1);
-  const z2 = getZonePercent(2);
-  const z3 = getZonePercent(3);
-
-  if (
-    manualLaps.length >= 3 &&
-    z5Time >= HIGH_INTENSITY_THRESHOLDS.anaerobic_z5
-  ) {
-    return "anaerobic";
-  }
-
-  if (z5Time >= HIGH_INTENSITY_THRESHOLDS.vo2max_z5) {
-    return "vo2max";
-  }
-
-  if (
-    z4Time >= HIGH_INTENSITY_THRESHOLDS.threshold_z4 ||
-    z4Time + z5Time >= HIGH_INTENSITY_THRESHOLDS.threshold_z4z5
-  ) {
-    return "threshold";
-  }
-
-  if (z3 >= 35 || (z3 >= 25 && z3Time >= 20 * 60)) {
-    return "tempo";
-  }
-
-  if (z2 >= 50 || (z2 >= 40 && z1 + z2 >= 70)) {
-    return "base";
-  }
-
-  if (z1 >= 40 || (z1 + z2 >= 80 && z1 >= 25)) {
-    return "recovery";
-  }
-
-  if (z1 + z2 >= 60) {
-    return "base";
-  }
-
-  return "tempo";
-}
-
-function isManualLap(lap: Lap): boolean {
-  return !/^Lap \d+$/.test(lap.name);
-}
-
-export function processManualLaps(
-  laps: Lap[],
-  streams: StreamSet
-): ManualLap[] {
-  const manual = laps.filter(isManualLap);
-  if (manual.length === 0) return [];
-
-  const hr = getStream<number>(streams, "heartrate");
-  const power = getStream<number>(streams, "watts");
-  const cadence = getStream<number>(streams, "cadence");
-  const altitude = getStream<number>(streams, "altitude");
-
-  return manual.map((lap, idx) => {
-    const result: ManualLap = {
-      lap_number: idx + 1,
-      name: lap.name,
-      duration: lap.moving_time,
-      distance: Math.round(lap.distance),
-      avg_pace: velocityToPace(lap.average_speed * 3.6),
-    };
-
-    if (hr && lap.start_index !== undefined) {
-      const slice = hr
-        .slice(lap.start_index, lap.end_index + 1)
-        .filter((x) => x > 0);
-      if (slice.length > 0) {
-        result.avg_heartrate = Math.round(avg(slice));
-        result.max_heartrate = Math.max(...slice);
-      }
-    } else if (lap.average_heartrate) {
-      result.avg_heartrate = Math.round(lap.average_heartrate);
-      result.max_heartrate = lap.max_heartrate;
-    }
-
-    if (power && lap.start_index !== undefined) {
-      const slice = power
-        .slice(lap.start_index, lap.end_index + 1)
-        .filter((x) => x > 0);
-      if (slice.length > 0) {
-        result.avg_power = Math.round(avg(slice));
-      }
-    }
-
-    if (cadence && lap.start_index !== undefined) {
-      const slice = cadence
-        .slice(lap.start_index, lap.end_index + 1)
-        .filter((x) => x > 0);
-      if (slice.length > 0) {
-        result.avg_cadence = Math.round(avg(slice));
-      }
-    } else if (lap.average_cadence) {
-      result.avg_cadence = Math.round(lap.average_cadence);
-    }
-
-    if (altitude && lap.start_index !== undefined) {
-      const slice = altitude.slice(lap.start_index, lap.end_index + 1);
-      result.elevation_gain = elevationDelta(slice).gain;
-    }
-
-    return result;
-  });
-}
-
-export function calculateSummary(
-  streams: StreamSet,
-  manualLaps: ManualLap[]
-): WorkoutSummary {
-  const velocity = getStream<number>(streams, "velocity_smooth") || [];
-  const hr = getStream<number>(streams, "heartrate") || [];
-  const power = getStream<number>(streams, "watts") || [];
-  const cadence = getStream<number>(streams, "cadence") || [];
-  const altitude = getStream<number>(streams, "altitude") || [];
-  const time = getStream<number>(streams, "time") || [];
-  const distance = getStream<number>(streams, "distance") || [];
-
-  const totalDuration = time.length > 1 ? time[time.length - 1] - time[0] : 0;
-  const totalDistance = distance.length > 1 ? distance[distance.length - 1] : 0;
-  const avgVelocity = velocity.filter((v) => v > 0);
-
-  const summary: WorkoutSummary = {
-    total_duration: Math.round(totalDuration),
-    total_distance: Math.round(totalDistance),
-    total_elevation_gain: elevationDelta(altitude).gain,
-    manual_laps_count: manualLaps.length,
-    avg_pace:
-      avgVelocity.length > 0 ? velocityToPace(avg(avgVelocity) * 3.6) : "-",
+  const result: DriftAnalysis = {
+    first_half: {},
+    second_half: {},
   };
 
-  const validHr = hr.filter((h) => h > 0);
-  if (validHr.length > 0) {
-    summary.avg_heartrate = Math.round(avg(validHr));
-    summary.max_heartrate = Math.max(...validHr);
+  if (hrData) {
+    const firstHalfHr = hrData.slice(0, midpoint).filter((h) => h > 0);
+    const secondHalfHr = hrData.slice(midpoint).filter((h) => h > 0);
+
+    if (firstHalfHr.length > 0 && secondHalfHr.length > 0) {
+      const avgFirstHr = Math.round(avg(firstHalfHr));
+      const avgSecondHr = Math.round(avg(secondHalfHr));
+
+      result.first_half.avg_hr = avgFirstHr;
+      result.second_half.avg_hr = avgSecondHr;
+
+      if (avgFirstHr > 0) {
+        result.hr_drift_percent =
+          Math.round(((avgSecondHr - avgFirstHr) / avgFirstHr) * 1000) / 10;
+      }
+    }
   }
 
-  const validPower = power.filter((p) => p > 0);
-  if (validPower.length > 0) {
-    summary.avg_power = Math.round(avg(validPower));
-    summary.normalized_power = calculateNormalizedPower(validPower);
+  if (powerData) {
+    const firstHalfPower = powerData.slice(0, midpoint).filter((p) => p > 0);
+    const secondHalfPower = powerData.slice(midpoint).filter((p) => p > 0);
+
+    if (firstHalfPower.length > 0 && secondHalfPower.length > 0) {
+      const avgFirstPower = Math.round(avg(firstHalfPower));
+      const avgSecondPower = Math.round(avg(secondHalfPower));
+
+      result.first_half.avg_power = avgFirstPower;
+      result.second_half.avg_power = avgSecondPower;
+
+      if (avgFirstPower > 0) {
+        result.power_fade_percent =
+          Math.round(((avgSecondPower - avgFirstPower) / avgFirstPower) * 1000) / 10;
+      }
+    }
   }
 
-  const validCadence = cadence.filter((c) => c > 0);
-  if (validCadence.length > 0) {
-    summary.avg_cadence = Math.round(avg(validCadence));
+  const hasData =
+    result.first_half.avg_hr !== undefined ||
+    result.first_half.avg_power !== undefined;
+
+  return hasData ? result : null;
+}
+
+export function calculateElevationProfile(streams: StreamSet): ElevationProfile | null {
+  const altitudeData = getStream<number>(streams, "altitude");
+  const distanceData = getStream<number>(streams, "distance");
+
+  if (!altitudeData || altitudeData.length < 10) return null;
+  if (!distanceData || distanceData.length !== altitudeData.length) return null;
+
+  const hrData = getStream<number>(streams, "heartrate");
+  const powerData = getStream<number>(streams, "watts");
+
+  const delta = elevationDelta(altitudeData);
+
+  const climbs = detectClimbs(altitudeData, distanceData, hrData, powerData);
+
+  const terrain = calculateTerrainDistribution(altitudeData, distanceData);
+
+  return {
+    total_gain: delta.gain,
+    total_loss: delta.loss,
+    min_elevation: Math.round(Math.min(...altitudeData)),
+    max_elevation: Math.round(Math.max(...altitudeData)),
+    climbs,
+    terrain_distribution: terrain,
+  };
+}
+
+function detectClimbs(
+  altitude: number[],
+  distance: number[],
+  hr: number[] | null,
+  power: number[] | null
+): Climb[] {
+  const climbs: Climb[] = [];
+  const MIN_CLIMB_GAIN = 20;
+  const MIN_CLIMB_GRADE = 2.0;
+
+  let climbStart: number | null = null;
+  let climbGain = 0;
+
+  for (let i = 1; i < altitude.length; i++) {
+    const elevChange = altitude[i] - altitude[i - 1];
+    const distChange = distance[i] - distance[i - 1];
+
+    if (distChange <= 0) continue;
+
+    const grade = (elevChange / distChange) * 100;
+
+    if (grade >= MIN_CLIMB_GRADE) {
+      if (climbStart === null) {
+        climbStart = i - 1;
+        climbGain = 0;
+      }
+      climbGain += elevChange;
+    } else if (climbStart !== null) {
+      if (climbGain >= MIN_CLIMB_GAIN) {
+        const climb = buildClimb(climbStart, i - 1, altitude, distance, hr, power);
+        if (climb) climbs.push(climb);
+      }
+      climbStart = null;
+      climbGain = 0;
+    }
   }
 
-  return summary;
+  if (climbStart !== null && climbGain >= MIN_CLIMB_GAIN) {
+    const climb = buildClimb(
+      climbStart,
+      altitude.length - 1,
+      altitude,
+      distance,
+      hr,
+      power
+    );
+    if (climb) climbs.push(climb);
+  }
+
+  return climbs;
+}
+
+function buildClimb(
+  startIdx: number,
+  endIdx: number,
+  altitude: number[],
+  distance: number[],
+  hr: number[] | null,
+  power: number[] | null
+): Climb | null {
+  const startKm = Math.round((distance[startIdx] / 1000) * 10) / 10;
+  const endKm = Math.round((distance[endIdx] / 1000) * 10) / 10;
+  const gain = Math.round(altitude[endIdx] - altitude[startIdx]);
+  const horizontalDist = distance[endIdx] - distance[startIdx];
+
+  if (horizontalDist <= 0) return null;
+
+  const avgGrade = Math.round((gain / horizontalDist) * 1000) / 10;
+
+  const climb: Climb = {
+    start_km: startKm,
+    end_km: endKm,
+    gain,
+    avg_grade: avgGrade,
+  };
+
+  if (hr) {
+    const hrSlice = hr.slice(startIdx, endIdx + 1).filter((h) => h > 0);
+    if (hrSlice.length > 0) {
+      climb.avg_hr = Math.round(avg(hrSlice));
+    }
+  }
+
+  if (power) {
+    const powerSlice = power.slice(startIdx, endIdx + 1).filter((p) => p > 0);
+    if (powerSlice.length > 0) {
+      climb.avg_power = Math.round(avg(powerSlice));
+    }
+  }
+
+  return climb;
+}
+
+function calculateTerrainDistribution(
+  altitude: number[],
+  distance: number[]
+): TerrainDistribution {
+  let climbingDist = 0;
+  let flatDist = 0;
+  let descendingDist = 0;
+  let climbingGrade = 0;
+  let flatGrade = 0;
+  let descendingGrade = 0;
+
+  const FLAT_THRESHOLD = 2.0;
+
+  for (let i = 1; i < altitude.length; i++) {
+    const elevChange = altitude[i] - altitude[i - 1];
+    const distChange = distance[i] - distance[i - 1];
+
+    if (distChange <= 0) continue;
+
+    const grade = (elevChange / distChange) * 100;
+
+    if (grade >= FLAT_THRESHOLD) {
+      climbingDist += distChange;
+      climbingGrade += grade * distChange;
+    } else if (grade <= -FLAT_THRESHOLD) {
+      descendingDist += distChange;
+      descendingGrade += grade * distChange;
+    } else {
+      flatDist += distChange;
+      flatGrade += Math.abs(grade) * distChange;
+    }
+  }
+
+  const totalDist = climbingDist + flatDist + descendingDist;
+
+  if (totalDist === 0) {
+    return {
+      climbing: { percent: 0, avg_grade: 0 },
+      flat: { percent: 100, avg_grade: 0 },
+      descending: { percent: 0, avg_grade: 0 },
+    };
+  }
+
+  return {
+    climbing: {
+      percent: Math.round((climbingDist / totalDist) * 100),
+      avg_grade:
+        climbingDist > 0
+          ? Math.round((climbingGrade / climbingDist) * 10) / 10
+          : 0,
+    },
+    flat: {
+      percent: Math.round((flatDist / totalDist) * 100),
+      avg_grade:
+        flatDist > 0 ? Math.round((flatGrade / flatDist) * 10) / 10 : 0,
+    },
+    descending: {
+      percent: Math.round((descendingDist / totalDist) * 100),
+      avg_grade:
+        descendingDist > 0
+          ? Math.round((descendingGrade / descendingDist) * 10) / 10
+          : 0,
+    },
+  };
+}
+
+export function calculateExtendedStats(streams: StreamSet): ExtendedStats | null {
+  const stats: ExtendedStats = {};
+
+  const hrData = getStream<number>(streams, "heartrate");
+  if (hrData) {
+    const validHr = hrData.filter((h) => h > 0);
+    if (validHr.length > 0) {
+      stats.heartrate = {
+        min: Math.min(...validHr),
+        max: Math.max(...validHr),
+      };
+    }
+  }
+
+  const powerData = getStream<number>(streams, "watts");
+  if (powerData) {
+    const validPower = powerData.filter((p) => p > 0);
+    if (validPower.length > 0) {
+      stats.power = {
+        min: Math.min(...validPower),
+        max: Math.max(...validPower),
+      };
+    }
+  }
+
+  const cadenceData = getStream<number>(streams, "cadence");
+  if (cadenceData) {
+    const validCadence = cadenceData.filter((c) => c > 0);
+    if (validCadence.length > 0) {
+      stats.cadence = {
+        min: Math.min(...validCadence),
+        max: Math.max(...validCadence),
+      };
+    }
+  }
+
+  return Object.keys(stats).length > 0 ? stats : null;
 }
 
 export function calculateOverallStats(streams: StreamSet): OverallStats {
