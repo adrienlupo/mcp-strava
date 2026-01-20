@@ -5,7 +5,6 @@ import type { StreamType } from "src/strava/types.js";
 import {
   calculateZoneDistribution,
   calculatePowerAnalysis,
-  calculateDriftAnalysis,
   calculateElevationProfile,
   calculateExtendedStats,
 } from "src/utils/workoutAnalysis.js";
@@ -25,7 +24,7 @@ export const getActivityStreamsSchema = z.object({
     .positive()
     .describe(
       "Activity ID. Returns zone distribution, power analysis (NP/VI), " +
-        "drift detection, elevation profile, and min/max stats - " +
+        "elevation profile, and min/max stats - " +
         "insights not available in get_activity_detail."
     ),
 });
@@ -55,7 +54,6 @@ export async function getActivityStreams(
 
   const zones = calculateZoneDistribution(streams, athleteZones);
   const powerAnalysis = calculatePowerAnalysis(streams);
-  const driftAnalysis = calculateDriftAnalysis(streams);
   const elevationProfile = calculateElevationProfile(streams);
   const extendedStats = calculateExtendedStats(streams);
 
@@ -69,10 +67,6 @@ export async function getActivityStreams(
 
   if (powerAnalysis) {
     response.power_analysis = powerAnalysis;
-  }
-
-  if (driftAnalysis) {
-    response.drift_analysis = driftAnalysis;
   }
 
   if (elevationProfile) {
