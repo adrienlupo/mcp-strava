@@ -78,19 +78,7 @@ export async function getSegmentEffortStreams(
   input: z.infer<typeof getSegmentEffortStreamsSchema>,
 ): Promise<TextContent[]> {
   const effort = await client.getSegmentEffortById(input.segment_effort_id);
-
-  // Fetch all historical efforts by using a wide date range (10 years back)
-  const tenYearsAgo = new Date();
-  tenYearsAgo.setFullYear(tenYearsAgo.getFullYear() - 10);
-  const startDate = tenYearsAgo.toISOString().split("T")[0];
-  const endDate = new Date().toISOString().split("T")[0];
-
-  const allEfforts = await client.listSegmentEfforts(effort.segment.id, {
-    per_page: 100,
-    start_date_local: startDate,
-    end_date_local: endDate,
-  });
-
+  const allEfforts = await client.listSegmentEfforts(effort.segment.id);
   const comparison = computeComparison(effort, allEfforts);
 
   const response = {

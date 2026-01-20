@@ -42,7 +42,7 @@ export class StravaClient {
         config.headers.Authorization = `Bearer ${token}`;
         return config;
       },
-      (error) => Promise.reject(error)
+      (error) => Promise.reject(error),
     );
 
     this.axios.interceptors.response.use(
@@ -50,18 +50,18 @@ export class StravaClient {
       (error) => {
         if (error.response?.status === 401) {
           throw new Error(
-            "Unauthorized: Token refresh failed or Strava revoked access"
+            "Unauthorized: Token refresh failed or Strava revoked access",
           );
         }
         if (error.response?.status === 429) {
           throw new Error(
             `Rate limited: ${
               error.response.data?.message || "Too many requests"
-            }`
+            }`,
           );
         }
         throw error;
-      }
+      },
     );
   }
 
@@ -73,7 +73,7 @@ export class StravaClient {
   async getAthleteStats(): Promise<AthleteStats> {
     const athlete = await this.getAthlete();
     const response = await this.axios.get<AthleteStats>(
-      `/athletes/${athlete.id}/stats`
+      `/athletes/${athlete.id}/stats`,
     );
     return response.data;
   }
@@ -94,7 +94,7 @@ export class StravaClient {
 
     const response = await this.axios.get<ActivitySummary[]>(
       "/athlete/activities",
-      { params: Object.fromEntries(params) }
+      { params: Object.fromEntries(params) },
     );
     return response.data;
   }
@@ -116,7 +116,7 @@ export class StravaClient {
     options?: {
       resolution?: StreamResolution;
       series_type?: "time" | "distance";
-    }
+    },
   ): Promise<StreamSet> {
     const params: Record<string, string> = {};
     if (options?.resolution) params.resolution = options.resolution;
@@ -124,33 +124,22 @@ export class StravaClient {
 
     const response = await this.axios.get<StreamSet>(
       `/activities/${id}/streams/${types.join(",")}`,
-      { params }
+      { params },
     );
     return response.data;
   }
 
   async getSegmentEffortById(id: string): Promise<SegmentEffort> {
     const response = await this.axios.get<SegmentEffort>(
-      `/segment_efforts/${id}`
+      `/segment_efforts/${id}`,
     );
     return response.data;
   }
 
   async listSegmentEfforts(
     segmentId: number | string,
-    options?: {
-      start_date_local?: string;
-      end_date_local?: string;
-      per_page?: number;
-    }
   ): Promise<SegmentEffort[]> {
     const params: Record<string, string | number> = { segment_id: segmentId };
-    if (options?.start_date_local)
-      params.start_date_local = options.start_date_local;
-    if (options?.end_date_local)
-      params.end_date_local = options.end_date_local;
-    if (options?.per_page) params.per_page = options.per_page;
-
     const response = await this.axios.get<SegmentEffort[]>("/segment_efforts", {
       params,
     });
