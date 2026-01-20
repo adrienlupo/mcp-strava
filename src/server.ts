@@ -24,6 +24,10 @@ import {
   getActivityStreams,
   getActivityStreamsSchema,
 } from "src/tools/getActivityStreams.js";
+import {
+  getSegmentEffortStreams,
+  getSegmentEffortStreamsSchema,
+} from "src/tools/getSegmentEffortStreams.js";
 
 export function createMcpServer(stravaClient: StravaClient) {
   const server = new McpServer({
@@ -97,8 +101,10 @@ export function createMcpServer(stravaClient: StravaClient) {
     {
       description:
         "Get activity metadata by ID. " +
-        "Returns: name, description, splits, laps, segment_efforts, gear, calories, device. " +
-        "For time-series analysis, use get_activity_streams instead.",
+        "Returns: name, description, splits, laps, segment_efforts, gear, calories. " +
+        "segment_efforts contains Strava segments from THIS activity only (no historical data). " +
+        "For segment analysis over time, pass segment_efforts[].id to get_segment_effort_streams. " +
+        "For full activity time-series, use get_activity_streams.",
       inputSchema: getActivityDetailSchema,
     },
     async (input) => ({
@@ -137,6 +143,26 @@ export function createMcpServer(stravaClient: StravaClient) {
       content: await getActivityStreams(
         stravaClient,
         getActivityStreamsSchema.parse(input)
+      ),
+    })
+  );
+
+  server.registerTool(
+    "get_segment_effort_streams",
+    {
+      description:
+        "Analyze a Strava segment with full historical comparison. " +
+        "ONE call returns EVERYTHING: segment info, current effort stats, AND comparison with " +
+        "ALL previous attempts (best_time, average_time, total_efforts, rank, previous_efforts list). " +
+        "No need to list_activities - this tool automatically fetches all historical data. " +
+        "Use when user asks about segment history, progress, PRs, or performance over time. " +
+        "Input: segment_effort_id from get_activity_detail's segment_efforts array.",
+      inputSchema: getSegmentEffortStreamsSchema,
+    },
+    async (input) => ({
+      content: await getSegmentEffortStreams(
+        stravaClient,
+        getSegmentEffortStreamsSchema.parse(input)
       ),
     })
   );

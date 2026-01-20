@@ -224,3 +224,58 @@ export interface Stream {
 }
 
 export type StreamSet = Stream[];
+
+export interface Segment {
+  id: number;
+  name: string;
+  activity_type: string;
+  distance: number;
+  average_grade: number;
+  maximum_grade: number;
+  elevation_high: number;
+  elevation_low: number;
+  climb_category: number;
+  city: string;
+  state: string;
+  country: string;
+  private: boolean;
+  starred: boolean;
+}
+
+export interface Achievement {
+  type_id: number;
+  type: string;
+  rank: number;
+}
+
+export interface AthleteSegmentStats {
+  pr_elapsed_time: number | null;
+  pr_date: string | null;
+  pr_activity_id: number | null;
+  effort_count: number;
+}
+
+export interface SegmentEffort {
+  id: number;
+  resource_state: number;
+  name: string;
+  activity: { id: number; resource_state: number };
+  athlete: { id: number; resource_state: number };
+  elapsed_time: number;
+  moving_time: number;
+  start_date: string;
+  start_date_local: string;
+  distance: number;
+  start_index: number;
+  end_index: number;
+  segment: Segment;
+  pr_rank: number | null;
+  kom_rank: number | null;
+  achievements: Achievement[];
+  athlete_segment_stats: AthleteSegmentStats;
+  average_heartrate?: number;
+  max_heartrate?: number;
+  average_cadence?: number;
+  average_watts?: number;
+  device_watts?: boolean;
+}
