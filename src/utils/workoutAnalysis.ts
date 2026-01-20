@@ -27,13 +27,6 @@ export interface PowerAnalysis {
   intensity_factor?: number;
 }
 
-export interface DriftAnalysis {
-  first_half: { avg_hr?: number; avg_power?: number };
-  second_half: { avg_hr?: number; avg_power?: number };
-  hr_drift_percent?: number;
-  power_fade_percent?: number;
-}
-
 export interface Climb {
   start_km: number;
   end_km: number;
@@ -175,65 +168,6 @@ export function calculatePowerAnalysis(
   }
 
   return result;
-}
-
-export function calculateDriftAnalysis(streams: StreamSet): DriftAnalysis | null {
-  const timeData = getStream<number>(streams, "time");
-  if (!timeData || timeData.length < 10) return null;
-
-  const hrData = getStream<number>(streams, "heartrate");
-  const powerData = getStream<number>(streams, "watts");
-
-  if (!hrData && !powerData) return null;
-
-  const midpoint = Math.floor(timeData.length / 2);
-
-  const result: DriftAnalysis = {
-    first_half: {},
-    second_half: {},
-  };
-
-  if (hrData) {
-    const firstHalfHr = hrData.slice(0, midpoint).filter((h) => h > 0);
-    const secondHalfHr = hrData.slice(midpoint).filter((h) => h > 0);
-
-    if (firstHalfHr.length > 0 && secondHalfHr.length > 0) {
-      const avgFirstHr = Math.round(avg(firstHalfHr));
-      const avgSecondHr = Math.round(avg(secondHalfHr));
-
-      result.first_half.avg_hr = avgFirstHr;
-      result.second_half.avg_hr = avgSecondHr;
-
-      if (avgFirstHr > 0) {
-        result.hr_drift_percent =
-          Math.round(((avgSecondHr - avgFirstHr) / avgFirstHr) * 1000) / 10;
-      }
-    }
-  }
-
-  if (powerData) {
-    const firstHalfPower = powerData.slice(0, midpoint).filter((p) => p > 0);
-    const secondHalfPower = powerData.slice(midpoint).filter((p) => p > 0);
-
-    if (firstHalfPower.length > 0 && secondHalfPower.length > 0) {
-      const avgFirstPower = Math.round(avg(firstHalfPower));
-      const avgSecondPower = Math.round(avg(secondHalfPower));
-
-      result.first_half.avg_power = avgFirstPower;
-      result.second_half.avg_power = avgSecondPower;
-
-      if (avgFirstPower > 0) {
-        result.power_fade_percent =
-          Math.round(((avgSecondPower - avgFirstPower) / avgFirstPower) * 1000) / 10;
-      }
-    }
-  }
-
-  const hasData =
-    result.first_half.avg_hr !== undefined ||
-    result.first_half.avg_power !== undefined;
-
-  return hasData ? result : null;
 }
 
 export function calculateElevationProfile(streams: StreamSet): ElevationProfile | null {
