@@ -1,31 +1,15 @@
 import { z } from "zod";
 import { StravaClient } from "src/strava/client.js";
 import type { TextContent } from "@modelcontextprotocol/sdk/types.js";
-import type { StreamType, SegmentEffort } from "src/strava/types.js";
-import { STREAM_TYPES } from "src/strava/constants.js";
-import { calculateOverallStats } from "src/utils/workoutAnalysis.js";
+import type { SegmentEffort } from "src/strava/types.js";
 
 export const getSegmentEffortStreamsSchema = z.object({
   segment_effort_id: z
-    .number()
-    .positive()
+    .string()
+    .regex(/^\d+$/, "Must be a numeric string")
     .describe(
-      "The Strava segment effort ID. " +
+      "The Strava segment effort ID as a string (to preserve precision for large IDs). " +
         "Get this from get_activity_detail response which includes segment_efforts array.",
-    ),
-  types: z
-    .array(z.enum(STREAM_TYPES))
-    .default([
-      "time",
-      "distance",
-      "heartrate",
-      "cadence",
-      "watts",
-      "velocity_smooth",
-      "altitude",
-    ])
-    .describe(
-      "Stream types to fetch. Defaults to all useful types for analysis.",
     ),
 });
 
@@ -93,32 +77,20 @@ export async function getSegmentEffortStreams(
   client: StravaClient,
   input: z.infer<typeof getSegmentEffortStreamsSchema>,
 ): Promise<TextContent[]> {
-  const [effort, streams] = await Promise.all([
-    client.getSegmentEffortById(input.segment_effort_id),
-    client.getSegmentEffortStreams(
-      input.segment_effort_id,
-      input.types as StreamType[],
-    ),
-  ]);
+  const effort = await client.getSegmentEffortById(input.segment_effort_id);
 
-  if (!streams || streams.length === 0) {
-    return [
-      {
-        type: "text",
-        text: JSON.stringify({
-          error: "No streams returned",
-          message:
-            "The segment effort may not have stream data, or it may be too old.",
-        }),
-      },
-    ];
-  }
+  // Fetch all historical efforts by using a wide date range (10 years back)
+  const tenYearsAgo = new Date();
+  tenYearsAgo.setFullYear(tenYearsAgo.getFullYear() - 10);
+  const startDate = tenYearsAgo.toISOString().split("T")[0];
+  const endDate = new Date().toISOString().split("T")[0];
 
   const allEfforts = await client.listSegmentEfforts(effort.segment.id, {
     per_page: 100,
+    start_date_local: startDate,
+    end_date_local: endDate,
   });
 
-  const stats = calculateOverallStats(streams);
   const comparison = computeComparison(effort, allEfforts);
 
   const response = {
@@ -139,7 +111,6 @@ export async function getSegmentEffortStreams(
       pr_rank: effort.pr_rank,
       kom_rank: effort.kom_rank,
     },
-    overall_stats: stats,
     comparison,
   };
 
