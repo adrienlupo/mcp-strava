@@ -9,6 +9,7 @@ import type {
   StreamType,
   StreamResolution,
   StreamSet,
+  SegmentEffort,
 } from "src/strava/types.js";
 
 const STRAVA_API_BASE = "https://www.strava.com/api/v3";
@@ -113,6 +114,45 @@ export class StravaClient {
       `/activities/${id}/streams/${types.join(",")}`,
       { params }
     );
+    return response.data;
+  }
+
+  async getSegmentEffortById(id: number): Promise<SegmentEffort> {
+    const response = await this.axios.get<SegmentEffort>(
+      `/segment_efforts/${id}`
+    );
+    return response.data;
+  }
+
+  async getSegmentEffortStreams(
+    id: number,
+    types: StreamType[]
+  ): Promise<StreamSet> {
+    const response = await this.axios.get<StreamSet>(
+      `/segment_efforts/${id}/streams`,
+      { params: { keys: types.join(","), key_by_type: true } }
+    );
+    return response.data;
+  }
+
+  async listSegmentEfforts(
+    segmentId: number,
+    options?: {
+      start_date_local?: string;
+      end_date_local?: string;
+      per_page?: number;
+    }
+  ): Promise<SegmentEffort[]> {
+    const params: Record<string, string | number> = { segment_id: segmentId };
+    if (options?.start_date_local)
+      params.start_date_local = options.start_date_local;
+    if (options?.end_date_local)
+      params.end_date_local = options.end_date_local;
+    if (options?.per_page) params.per_page = options.per_page;
+
+    const response = await this.axios.get<SegmentEffort[]>("/segment_efforts", {
+      params,
+    });
     return response.data;
   }
 }
