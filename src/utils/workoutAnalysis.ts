@@ -27,30 +27,6 @@ export interface PowerAnalysis {
   intensity_factor?: number;
 }
 
-export interface Climb {
-  start_km: number;
-  end_km: number;
-  gain: number;
-  avg_grade: number;
-  avg_hr?: number;
-  avg_power?: number;
-}
-
-export interface TerrainDistribution {
-  climbing: { percent: number; avg_grade: number };
-  flat: { percent: number; avg_grade: number };
-  descending: { percent: number; avg_grade: number };
-}
-
-export interface ElevationProfile {
-  total_gain: number;
-  total_loss: number;
-  min_elevation: number;
-  max_elevation: number;
-  climbs: Climb[];
-  terrain_distribution: TerrainDistribution;
-}
-
 export interface ExtendedStats {
   heartrate?: { min: number; max: number };
   power?: { min: number; max: number };
@@ -58,7 +34,14 @@ export interface ExtendedStats {
 }
 
 export interface OverallStats {
-  velocity: { min_kph: number; max_kph: number; avg_kph: number };
+  velocity: {
+    min_kph: number;
+    max_kph: number;
+    avg_kph: number;
+    min_per_km: number;
+    max_per_km: number;
+    avg_per_km: number;
+  };
   heartrate?: { min: number; max: number; avg: number };
   power?: { min: number; max: number; avg: number; normalized: number };
   cadence?: { min: number; max: number; avg: number };
@@ -170,191 +153,6 @@ export function calculatePowerAnalysis(
   return result;
 }
 
-export function calculateElevationProfile(streams: StreamSet): ElevationProfile | null {
-  const altitudeData = getStream<number>(streams, "altitude");
-  const distanceData = getStream<number>(streams, "distance");
-
-  if (!altitudeData || altitudeData.length < 10) return null;
-  if (!distanceData || distanceData.length !== altitudeData.length) return null;
-
-  const hrData = getStream<number>(streams, "heartrate");
-  const powerData = getStream<number>(streams, "watts");
-
-  const delta = elevationDelta(altitudeData);
-
-  const climbs = detectClimbs(altitudeData, distanceData, hrData, powerData);
-
-  const terrain = calculateTerrainDistribution(altitudeData, distanceData);
-
-  return {
-    total_gain: delta.gain,
-    total_loss: delta.loss,
-    min_elevation: Math.round(Math.min(...altitudeData)),
-    max_elevation: Math.round(Math.max(...altitudeData)),
-    climbs,
-    terrain_distribution: terrain,
-  };
-}
-
-function detectClimbs(
-  altitude: number[],
-  distance: number[],
-  hr: number[] | null,
-  power: number[] | null
-): Climb[] {
-  const climbs: Climb[] = [];
-  const MIN_CLIMB_GAIN = 20;
-  const MIN_CLIMB_GRADE = 2.0;
-
-  let climbStart: number | null = null;
-  let climbGain = 0;
-
-  for (let i = 1; i < altitude.length; i++) {
-    const elevChange = altitude[i] - altitude[i - 1];
-    const distChange = distance[i] - distance[i - 1];
-
-    if (distChange <= 0) continue;
-
-    const grade = (elevChange / distChange) * 100;
-
-    if (grade >= MIN_CLIMB_GRADE) {
-      if (climbStart === null) {
-        climbStart = i - 1;
-        climbGain = 0;
-      }
-      climbGain += elevChange;
-    } else if (climbStart !== null) {
-      if (climbGain >= MIN_CLIMB_GAIN) {
-        const climb = buildClimb(climbStart, i - 1, altitude, distance, hr, power);
-        if (climb) climbs.push(climb);
-      }
-      climbStart = null;
-      climbGain = 0;
-    }
-  }
-
-  if (climbStart !== null && climbGain >= MIN_CLIMB_GAIN) {
-    const climb = buildClimb(
-      climbStart,
-      altitude.length - 1,
-      altitude,
-      distance,
-      hr,
-      power
-    );
-    if (climb) climbs.push(climb);
-  }
-
-  return climbs;
-}
-
-function buildClimb(
-  startIdx: number,
-  endIdx: number,
-  altitude: number[],
-  distance: number[],
-  hr: number[] | null,
-  power: number[] | null
-): Climb | null {
-  const startKm = Math.round((distance[startIdx] / 1000) * 10) / 10;
-  const endKm = Math.round((distance[endIdx] / 1000) * 10) / 10;
-  const gain = Math.round(altitude[endIdx] - altitude[startIdx]);
-  const horizontalDist = distance[endIdx] - distance[startIdx];
-
-  if (horizontalDist <= 0) return null;
-
-  const avgGrade = Math.round((gain / horizontalDist) * 1000) / 10;
-
-  const climb: Climb = {
-    start_km: startKm,
-    end_km: endKm,
-    gain,
-    avg_grade: avgGrade,
-  };
-
-  if (hr) {
-    const hrSlice = hr.slice(startIdx, endIdx + 1).filter((h) => h > 0);
-    if (hrSlice.length > 0) {
-      climb.avg_hr = Math.round(avg(hrSlice));
-    }
-  }
-
-  if (power) {
-    const powerSlice = power.slice(startIdx, endIdx + 1).filter((p) => p > 0);
-    if (powerSlice.length > 0) {
-      climb.avg_power = Math.round(avg(powerSlice));
-    }
-  }
-
-  return climb;
-}
-
-function calculateTerrainDistribution(
-  altitude: number[],
-  distance: number[]
-): TerrainDistribution {
-  let climbingDist = 0;
-  let flatDist = 0;
-  let descendingDist = 0;
-  let climbingGrade = 0;
-  let flatGrade = 0;
-  let descendingGrade = 0;
-
-  const FLAT_THRESHOLD = 2.0;
-
-  for (let i = 1; i < altitude.length; i++) {
-    const elevChange = altitude[i] - altitude[i - 1];
-    const distChange = distance[i] - distance[i - 1];
-
-    if (distChange <= 0) continue;
-
-    const grade = (elevChange / distChange) * 100;
-
-    if (grade >= FLAT_THRESHOLD) {
-      climbingDist += distChange;
-      climbingGrade += grade * distChange;
-    } else if (grade <= -FLAT_THRESHOLD) {
-      descendingDist += distChange;
-      descendingGrade += grade * distChange;
-    } else {
-      flatDist += distChange;
-      flatGrade += Math.abs(grade) * distChange;
-    }
-  }
-
-  const totalDist = climbingDist + flatDist + descendingDist;
-
-  if (totalDist === 0) {
-    return {
-      climbing: { percent: 0, avg_grade: 0 },
-      flat: { percent: 100, avg_grade: 0 },
-      descending: { percent: 0, avg_grade: 0 },
-    };
-  }
-
-  return {
-    climbing: {
-      percent: Math.round((climbingDist / totalDist) * 100),
-      avg_grade:
-        climbingDist > 0
-          ? Math.round((climbingGrade / climbingDist) * 10) / 10
-          : 0,
-    },
-    flat: {
-      percent: Math.round((flatDist / totalDist) * 100),
-      avg_grade:
-        flatDist > 0 ? Math.round((flatGrade / flatDist) * 10) / 10 : 0,
-    },
-    descending: {
-      percent: Math.round((descendingDist / totalDist) * 100),
-      avg_grade:
-        descendingDist > 0
-          ? Math.round((descendingGrade / descendingDist) * 10) / 10
-          : 0,
-    },
-  };
-}
-
 export function calculateExtendedStats(streams: StreamSet): ExtendedStats | null {
   const stats: ExtendedStats = {};
 
@@ -396,17 +194,30 @@ export function calculateExtendedStats(streams: StreamSet): ExtendedStats | null
 
 export function calculateOverallStats(streams: StreamSet): OverallStats {
   const stats: OverallStats = {
-    velocity: { min_kph: 0, max_kph: 0, avg_kph: 0 },
+    velocity: {
+      min_kph: 0,
+      max_kph: 0,
+      avg_kph: 0,
+      min_per_km: 0,
+      max_per_km: 0,
+      avg_per_km: 0,
+    },
   };
 
   const velocity = getStream<number>(streams, "velocity_smooth");
   if (velocity) {
     const v = velocity.filter((x) => x > 0);
     if (v.length > 0) {
+      const minV = Math.min(...v);
+      const maxV = Math.max(...v);
+      const avgV = avg(v);
       stats.velocity = {
-        min_kph: Math.round(Math.min(...v) * 3.6 * 10) / 10,
-        max_kph: Math.round(Math.max(...v) * 3.6 * 10) / 10,
-        avg_kph: Math.round(avg(v) * 3.6 * 10) / 10,
+        min_kph: Math.round(minV * 3.6 * 10) / 10,
+        max_kph: Math.round(maxV * 3.6 * 10) / 10,
+        avg_kph: Math.round(avgV * 3.6 * 10) / 10,
+        min_per_km: Math.round(1000 / maxV),
+        max_per_km: Math.round(1000 / minV),
+        avg_per_km: Math.round(1000 / avgV),
       };
     }
   }
