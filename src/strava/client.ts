@@ -1,4 +1,5 @@
 import axios, { AxiosInstance } from "axios";
+import JSONBigInt from "json-bigint";
 import { TokenManager } from "src/auth/tokenManager.js";
 import type {
   AthleteProfile,
@@ -14,6 +15,10 @@ import type {
 
 const STRAVA_API_BASE = "https://www.strava.com/api/v3";
 
+// Configure json-bigint to convert large integers to strings
+// This preserves precision for IDs that exceed Number.MAX_SAFE_INTEGER
+const jsonBigInt = JSONBigInt({ storeAsString: true });
+
 export class StravaClient {
   private axios: AxiosInstance;
   private tokenManager: TokenManager;
@@ -22,6 +27,13 @@ export class StravaClient {
     this.tokenManager = tokenManager;
     this.axios = axios.create({
       baseURL: STRAVA_API_BASE,
+      transformResponse: (data: string) => {
+        try {
+          return jsonBigInt.parse(data);
+        } catch {
+          return data;
+        }
+      },
     });
 
     this.axios.interceptors.request.use(
@@ -117,26 +129,15 @@ export class StravaClient {
     return response.data;
   }
 
-  async getSegmentEffortById(id: number): Promise<SegmentEffort> {
+  async getSegmentEffortById(id: string): Promise<SegmentEffort> {
     const response = await this.axios.get<SegmentEffort>(
       `/segment_efforts/${id}`
     );
     return response.data;
   }
 
-  async getSegmentEffortStreams(
-    id: number,
-    types: StreamType[]
-  ): Promise<StreamSet> {
-    const response = await this.axios.get<StreamSet>(
-      `/segment_efforts/${id}/streams`,
-      { params: { keys: types.join(","), key_by_type: true } }
-    );
-    return response.data;
-  }
-
   async listSegmentEfforts(
-    segmentId: number,
+    segmentId: number | string,
     options?: {
       start_date_local?: string;
       end_date_local?: string;
