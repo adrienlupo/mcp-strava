@@ -1,61 +1,45 @@
 import { z } from "zod";
 import { StravaClient } from "src/strava/client.js";
 import type { TextContent } from "@modelcontextprotocol/sdk/types.js";
-import { calculateZoneDistribution } from "src/utils/workoutAnalysis.js";
 
 export const getActivityZonesSchema = z.object({
-  activity_id: z
-    .number()
-    .positive()
-    .describe(
-      "Activity ID. Returns heart rate and power zone distribution as percentages of total training time."
-    ),
+  activity_id: z.number().positive().describe("The Strava activity ID"),
 });
+
+function calculateZonePercentage(time: number, totalTime: number): number {
+  if (totalTime === 0) return 0;
+  return Math.round((time / totalTime) * 100);
+}
 
 export async function getActivityZones(
   client: StravaClient,
   input: z.infer<typeof getActivityZonesSchema>
 ): Promise<TextContent[]> {
-  const [streams, athleteZones] = await Promise.all([
-    client.getActivityStreams(input.activity_id, ["time", "heartrate", "watts"], {
-      resolution: "high",
-    }),
-    client.getAthleteZones().catch(() => null),
-  ]);
+  const activityZones = await client.getActivityZones(input.activity_id);
 
-  if (!streams || streams.length === 0) {
-    return [
-      {
-        type: "text",
-        text: JSON.stringify({
-          error: "No streams returned",
-          message: "The activity may not have this data, or it may be too old.",
-        }),
-      },
-    ];
-  }
+  const enriched = activityZones.map((zone) => {
+    const totalTime = zone.distribution_buckets.reduce(
+      (sum, bucket) => sum + bucket.time,
+      0
+    );
 
-  const zones = calculateZoneDistribution(streams, athleteZones);
+    return {
+      type: zone.type,
+      sensor_based: zone.sensor_based,
+      score: zone.score,
+      points: zone.points,
+      custom_zones: zone.custom_zones,
+      max: zone.max,
+      total_time_seconds: totalTime,
+      zones: zone.distribution_buckets.map((bucket, index) => ({
+        zone: index + 1,
+        min: bucket.min,
+        max: bucket.max,
+        time_seconds: bucket.time,
+        percent: calculateZonePercentage(bucket.time, totalTime),
+      })),
+    };
+  });
 
-  if (!zones) {
-    return [
-      {
-        type: "text",
-        text: JSON.stringify({
-          error: "No zone data available",
-          message: "Athlete zones not configured or no heart rate/power data.",
-        }),
-      },
-    ];
-  }
-
-  const toPercentMap = (zoneList: typeof zones.heart_rate) =>
-    Object.fromEntries(zoneList!.map((z) => [z.name, z.percent]));
-
-  const response = {
-    ...(zones.heart_rate && { heart_rate_zones: toPercentMap(zones.heart_rate) }),
-    ...(zones.power && { power_zones: toPercentMap(zones.power) }),
-  };
-
-  return [{ type: "text", text: JSON.stringify(response) }];
+  return [{ type: "text", text: JSON.stringify(enriched) }];
 }

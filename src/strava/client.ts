@@ -7,9 +7,7 @@ import type {
   ActivitySummary,
   ActivityDetail,
   AthleteZones,
-  StreamType,
-  StreamResolution,
-  StreamSet,
+  ActivityZone,
   SegmentEffort,
 } from "src/strava/types.js";
 
@@ -110,21 +108,9 @@ export class StravaClient {
     return response.data;
   }
 
-  async getActivityStreams(
-    id: number,
-    types: StreamType[],
-    options?: {
-      resolution?: StreamResolution;
-      series_type?: "time" | "distance";
-    },
-  ): Promise<StreamSet> {
-    const params: Record<string, string> = {};
-    if (options?.resolution) params.resolution = options.resolution;
-    if (options?.series_type) params.series_type = options.series_type;
-
-    const response = await this.axios.get<StreamSet>(
-      `/activities/${id}/streams/${types.join(",")}`,
-      { params },
+  async getActivityZones(id: number): Promise<ActivityZone[]> {
+    const response = await this.axios.get<ActivityZone[]>(
+      `/activities/${id}/zones`,
     );
     return response.data;
   }

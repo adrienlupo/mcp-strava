@@ -2,7 +2,7 @@
 
 Minimalist Strava integration for Claude.
 
-5 focused tools. One-time auth. Zero bloat.
+7 focused tools. One-time auth. Zero bloat.
 
 ## What You Can Ask Claude
 
@@ -12,29 +12,15 @@ Minimalist Strava integration for Claude.
 
 ## Tools
 
-| Tool                  | What it does                  |
-| --------------------- | ----------------------------- |
-| `get_athlete_profile` | Your profile info             |
-| `get_athlete_stats`   | Totals: recent, YTD, all-time |
-| `get_athlete_zones`   | HR and power zones            |
-| `list_activities`     | Browse with date filtering    |
-| `get_activity_detail` | Full workout breakdown        |
-
-### Workout Analysis
-
-Beyond raw Strava data, `get_activity_detail` provides computed insights:
-
-| Analysis | What it does |
-| -------- | ------------ |
-| **Zone Distribution** | Time spent in each HR/power zone with percentages |
-| **Workout Type Detection** | Auto-classifies intensity (recovery, base, tempo, threshold, vo2max) |
-| **Manual Lap Analysis** | Extracts user-created laps with per-lap metrics |
-| **Normalized Power** | Training Peaks algorithm for cycling power |
-| **Elevation Calculations** | Computed gain/loss from altitude stream |
-
-**Per-lap metrics include:** duration, distance, pace, avg/max HR, power, cadence, elevation gain
-
-**Workout detection uses:** HR zone distribution, time thresholds, and lap structure to classify training intensity automatically.
+| Tool                       | What it does                                      |
+| -------------------------- | ------------------------------------------------- |
+| `get_athlete_profile`      | Your profile info                                 |
+| `get_athlete_stats`        | Totals: recent, YTD, all-time                     |
+| `get_athlete_zones`        | HR and power zone configuration                   |
+| `list_activities`          | Browse with date filtering                        |
+| `get_activity_detail`      | Full workout breakdown with laps and segments     |
+| `get_activity_zones`       | Zone distribution with time and percentage per zone |
+| `get_segment_effort_streams` | Segment analysis with historical comparison     |
 
 ## Quick Start with npx
 
