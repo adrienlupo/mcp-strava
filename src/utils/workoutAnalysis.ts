@@ -75,7 +75,7 @@ export function calculateTimeInZones(
 
     for (let z = 0; z < zones.length; z++) {
       const zone = zones[z];
-      if (value >= zone.min && (value < zone.max || zone.max === -1)) {
+      if (value >= zone.min && (value <= zone.max || zone.max === -1)) {
         zoneTimes[z] += dt;
         break;
       }
