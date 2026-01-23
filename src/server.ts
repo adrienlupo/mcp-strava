@@ -21,9 +21,9 @@ import {
   getAthleteZonesSchema,
 } from "src/tools/getAthleteZones.js";
 import {
-  getActivityStreams,
-  getActivityStreamsSchema,
-} from "src/tools/getActivityStreams.js";
+  getActivityZones,
+  getActivityZonesSchema,
+} from "src/tools/getActivityZones.js";
 import {
   getSegmentEffortStreams,
   getSegmentEffortStreamsSchema,
@@ -130,20 +130,18 @@ export function createMcpServer(stravaClient: StravaClient) {
   );
 
   server.registerTool(
-    "get_activity_streams",
+    "get_activity_zones",
     {
       description:
-        "Analyze activity time-series data with computed metrics (no raw streams returned). " +
-        "Returns: zone_distribution (HR/power time-in-zones by training zone name), " +
-        "power_analysis (NP, avg power, variability index, IF), " +
-        "extended_stats (min/max for HR, power, cadence). " +
-        "Requires activity_id from list_activities. Needs athlete zones configured for zone_distribution.",
-      inputSchema: getActivityStreamsSchema,
+        "Get heart rate and power zone distribution for an activity. " +
+        "Returns percentage of total training time spent in each zone. " +
+        "Requires athlete zones to be configured in Strava.",
+      inputSchema: getActivityZonesSchema,
     },
     async (input) => ({
-      content: await getActivityStreams(
+      content: await getActivityZones(
         stravaClient,
-        getActivityStreamsSchema.parse(input)
+        getActivityZonesSchema.parse(input)
       ),
     })
   );
