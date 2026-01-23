@@ -200,30 +200,21 @@ export interface Zone {
   max: number;
 }
 
-export type StreamType =
-  | "time"
-  | "distance"
-  | "latlng"
-  | "altitude"
-  | "heartrate"
-  | "cadence"
-  | "watts"
-  | "velocity_smooth"
-  | "grade_smooth"
-  | "moving"
-  | "temp";
-
-export type StreamResolution = "low" | "medium" | "high";
-
-export interface Stream {
-  type: StreamType;
-  data: number[] | [number, number][] | boolean[];
-  series_type: "time" | "distance";
-  original_size: number;
-  resolution: StreamResolution;
+export interface ActivityZone {
+  score: number;
+  sensor_based: boolean;
+  custom_zones: boolean;
+  max: number;
+  distribution_buckets: DistributionBucket[];
+  type: string;
+  points: number;
 }
 
-export type StreamSet = Stream[];
+export interface DistributionBucket {
+  min: number;
+  max: number;
+  time: number;
+}
 
 export interface Segment {
   id: number;

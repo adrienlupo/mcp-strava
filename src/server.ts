@@ -133,9 +133,9 @@ export function createMcpServer(stravaClient: StravaClient) {
     "get_activity_zones",
     {
       description:
-        "Get heart rate and power zone distribution for an activity. " +
-        "Returns percentage of total training time spent in each zone. " +
-        "Requires athlete zones to be configured in Strava.",
+        "Get zone distribution for an activity (heart rate, pace, power). " +
+        "Returns zone boundaries, time in seconds, and percentage per zone. " +
+        "For activity-specific zone analysis with time/ratios.",
       inputSchema: getActivityZonesSchema,
     },
     async (input) => ({
