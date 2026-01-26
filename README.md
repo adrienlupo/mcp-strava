@@ -70,9 +70,7 @@ open ~/Library/Application\ Support/Claude/
 Run the auth server to authorize with your Strava account:
 
 ```bash
-STRAVA_CLIENT_ID=your_client_id \
-STRAVA_CLIENT_SECRET=your_client_secret \
-STRAVA_REDIRECT_URI=http://localhost:3000/auth/callback \
+STRAVA_CLIENT_ID=your_client_id STRAVA_CLIENT_SECRET=your_client_secret STRAVA_REDIRECT_URI=http://localhost:3000/auth/callback
 npx mcp-strava-auth
 ```
 
@@ -139,7 +137,7 @@ open ~/Library/Application\ Support/Claude/
 Run the authorization server with your Strava credentials:
 
 ```bash
-STRAVA_CLIENT_ID=__CHANGEME__ STRAVA_CLIENT_SECRET=__CHANGEME__ STRAVA_REDIRECT_URI=http://localhost:3000/auth/callback npm run auth
+STRAVA_CLIENT_ID=your_client_id STRAVA_CLIENT_SECRET=your_client_secret STRAVA_REDIRECT_URI=http://localhost:3000/auth/callback npm run auth
 ```
 
 Then:
