@@ -1,9 +1,46 @@
 #!/usr/bin/env node
 import express from "express";
-import { getAuthorizationUrl, exchangeCodeForTokens } from "./auth/oauth.js";
+import { z } from "zod";
+import {
+  getAuthorizationUrl,
+  exchangeCodeForTokens,
+  type StravaCredentials,
+} from "./auth/oauth.js";
 import { TokenManager } from "./auth/tokenManager.js";
 import { stateManager } from "./auth/stateManager.js";
 import { config } from "./config.js";
+
+const authConfigSchema = z.object({
+  stravaClientId: z.string().min(1, "STRAVA_CLIENT_ID is required"),
+  stravaClientSecret: z.string().min(1, "STRAVA_CLIENT_SECRET is required"),
+  stravaRedirectUri: z.string().url("STRAVA_REDIRECT_URI must be a valid URL"),
+});
+
+function loadAuthConfig(): StravaCredentials {
+  try {
+    const parsed = authConfigSchema.parse({
+      stravaClientId: process.env.STRAVA_CLIENT_ID,
+      stravaClientSecret: process.env.STRAVA_CLIENT_SECRET,
+      stravaRedirectUri: process.env.STRAVA_REDIRECT_URI,
+    });
+    return {
+      client_id: parsed.stravaClientId,
+      client_secret: parsed.stravaClientSecret,
+      redirect_uri: parsed.stravaRedirectUri,
+    };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      console.error("Configuration validation failed:");
+      for (const issue of error.issues) {
+        console.error(`- ${issue.message}`);
+      }
+      process.exit(1);
+    }
+    throw error;
+  }
+}
+
+const credentials = loadAuthConfig();
 
 function escapeHtml(unsafe: string): string {
   return unsafe
@@ -21,7 +58,7 @@ const PORT = parseInt(config.port);
 
 app.get("/auth/strava", (req, res) => {
   const state = stateManager.generateState();
-  const authUrl = getAuthorizationUrl(state);
+  const authUrl = getAuthorizationUrl(credentials, state);
   res.redirect(authUrl);
 });
 
@@ -66,8 +103,8 @@ app.get("/auth/callback", async (req, res) => {
   }
 
   try {
-    const tokens = await exchangeCodeForTokens(code);
-    tokenManager.saveTokens(tokens);
+    const tokens = await exchangeCodeForTokens(credentials, code);
+    tokenManager.saveTokensWithCredentials(tokens, credentials);
 
     res.send(`
       <html>
