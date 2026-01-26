@@ -12,15 +12,15 @@ Minimalist Strava integration for Claude.
 
 ## Tools
 
-| Tool                       | What it does                                      |
-| -------------------------- | ------------------------------------------------- |
-| `get_athlete_profile`      | Your profile info                                 |
-| `get_athlete_stats`        | Totals: recent, YTD, all-time                     |
-| `get_athlete_zones`        | HR and power zone configuration                   |
-| `list_activities`          | Browse with date filtering                        |
-| `get_activity_detail`      | Full workout breakdown with laps and segments     |
-| `get_activity_zones`       | Zone distribution with time and percentage per zone |
-| `get_segment_effort_streams` | Segment analysis with historical comparison     |
+| Tool                         | What it does                                        |
+| ---------------------------- | --------------------------------------------------- |
+| `get_athlete_profile`        | Your profile info                                   |
+| `get_athlete_stats`          | Totals: recent, YTD, all-time                       |
+| `get_athlete_zones`          | HR and power zone configuration                     |
+| `list_activities`            | Browse with date filtering                          |
+| `get_activity_detail`        | Full workout breakdown with laps and segments       |
+| `get_activity_zones`         | Zone distribution with time and percentage per zone |
+| `get_segment_effort_streams` | Segment analysis with historical comparison         |
 
 ## Quick Start with npx
 
@@ -125,8 +125,8 @@ open ~/Library/Application\ Support/Claude/
       "command": "node",
       "args": ["/absolute/path/to/mcp-strava/dist/index.js"],
       "env": {
-        "STRAVA_CLIENT_ID": "your_client_id",
-        "STRAVA_CLIENT_SECRET": "your_client_secret",
+        "STRAVA_CLIENT_ID": "CHANGEME",
+        "STRAVA_CLIENT_SECRET": "CHANGEME",
         "STRAVA_REDIRECT_URI": "http://localhost:3000/auth/callback"
       }
     }
@@ -139,10 +139,7 @@ open ~/Library/Application\ Support/Claude/
 Run the authorization server with your Strava credentials:
 
 ```bash
-STRAVA_CLIENT_ID=your_client_id \
-STRAVA_CLIENT_SECRET=your_client_secret \
-STRAVA_REDIRECT_URI=http://localhost:3000/auth/callback \
-npm run auth
+STRAVA_CLIENT_ID=__CHANGEME__ STRAVA_CLIENT_SECRET=__CHANGEME__ STRAVA_REDIRECT_URI=http://localhost:3000/auth/callback npm run auth
 ```
 
 Then:
