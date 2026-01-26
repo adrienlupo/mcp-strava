@@ -1,14 +1,17 @@
 import fs from "fs";
 import path from "path";
 import { refreshAccessToken } from "src/auth/oauth.js";
-import type { StravaTokens } from "src/auth/oauth.js";
-import { config } from "src/config.js";
+import type {
+  StravaTokens,
+  StravaCredentials,
+  StoredTokenData,
+} from "src/auth/oauth.js";
 
 export class TokenManager {
   private tokenPath: string;
 
-  constructor(tokenPath?: string) {
-    this.tokenPath = tokenPath || config.tokenFilePath;
+  constructor(tokenPath: string) {
+    this.tokenPath = tokenPath;
     this.ensureDataDirectory();
   }
 
@@ -23,10 +26,10 @@ export class TokenManager {
     return fs.existsSync(this.tokenPath);
   }
 
-  loadTokens(): StravaTokens {
+  private loadStoredData(): StoredTokenData {
     if (!this.hasTokens()) {
       throw new Error(
-        "No tokens found. Please authorize the application first by visiting /auth/strava"
+        "No tokens found. Please authorize the application first using: npx mcp-strava-auth"
       );
     }
 
@@ -38,10 +41,50 @@ export class TokenManager {
     }
   }
 
+  loadTokens(): StravaTokens {
+    const data = this.loadStoredData();
+    return {
+      access_token: data.access_token,
+      refresh_token: data.refresh_token,
+      expires_at: data.expires_at,
+      token_type: data.token_type,
+    };
+  }
+
+  loadCredentials(): StravaCredentials {
+    const data = this.loadStoredData();
+    if (!data.credentials) {
+      throw new Error(
+        "No credentials found in token file. Please re-authorize using: npx mcp-strava-auth"
+      );
+    }
+    return data.credentials;
+  }
+
+  saveTokensWithCredentials(
+    tokens: StravaTokens,
+    credentials: StravaCredentials
+  ): void {
+    try {
+      this.ensureDataDirectory();
+      const storedData: StoredTokenData = { ...tokens, credentials };
+      fs.writeFileSync(this.tokenPath, JSON.stringify(storedData, null, 2), {
+        mode: 0o600,
+      });
+    } catch (error) {
+      throw new Error(`Failed to save tokens: ${(error as Error).message}`);
+    }
+  }
+
   saveTokens(tokens: StravaTokens): void {
     try {
       this.ensureDataDirectory();
-      fs.writeFileSync(this.tokenPath, JSON.stringify(tokens, null, 2), {
+      const existingData = this.loadStoredData();
+      const storedData: StoredTokenData = {
+        ...tokens,
+        credentials: existingData.credentials,
+      };
+      fs.writeFileSync(this.tokenPath, JSON.stringify(storedData, null, 2), {
         mode: 0o600,
       });
     } catch (error) {
@@ -63,7 +106,8 @@ export class TokenManager {
     }
 
     console.error("Access token expired, refreshing...");
-    const newTokens = await refreshAccessToken(tokens.refresh_token);
+    const credentials = this.loadCredentials();
+    const newTokens = await refreshAccessToken(credentials, tokens.refresh_token);
     this.saveTokens(newTokens);
 
     return newTokens.access_token;

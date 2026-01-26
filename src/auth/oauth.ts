@@ -1,5 +1,4 @@
 import axios from "axios";
-import { config } from "src/config.js";
 
 export interface StravaTokens {
   access_token: string;
@@ -8,13 +7,26 @@ export interface StravaTokens {
   token_type: string;
 }
 
+export interface StravaCredentials {
+  client_id: string;
+  client_secret: string;
+  redirect_uri: string;
+}
+
+export interface StoredTokenData extends StravaTokens {
+  credentials: StravaCredentials;
+}
+
 const STRAVA_AUTH_URL = "https://www.strava.com/oauth/authorize";
 const STRAVA_TOKEN_URL = "https://www.strava.com/api/v3/oauth/token";
 
-export function getAuthorizationUrl(state: string): string {
+export function getAuthorizationUrl(
+  credentials: StravaCredentials,
+  state: string
+): string {
   const params = new URLSearchParams({
-    client_id: config.stravaClientId,
-    redirect_uri: config.stravaRedirectUri,
+    client_id: credentials.client_id,
+    redirect_uri: credentials.redirect_uri,
     response_type: "code",
     scope: "read,activity:read_all,profile:read_all",
     state,
@@ -24,12 +36,13 @@ export function getAuthorizationUrl(state: string): string {
 }
 
 export async function exchangeCodeForTokens(
+  credentials: StravaCredentials,
   code: string
 ): Promise<StravaTokens> {
   try {
     const response = await axios.post(STRAVA_TOKEN_URL, {
-      client_id: config.stravaClientId,
-      client_secret: config.stravaClientSecret,
+      client_id: credentials.client_id,
+      client_secret: credentials.client_secret,
       code,
       grant_type: "authorization_code",
     });
@@ -54,12 +67,13 @@ export async function exchangeCodeForTokens(
 
 // Important: Strava returns a NEW refresh token with each refresh
 export async function refreshAccessToken(
+  credentials: StravaCredentials,
   refreshToken: string
 ): Promise<StravaTokens> {
   try {
     const response = await axios.post(STRAVA_TOKEN_URL, {
-      client_id: config.stravaClientId,
-      client_secret: config.stravaClientSecret,
+      client_id: credentials.client_id,
+      client_secret: credentials.client_secret,
       refresh_token: refreshToken,
       grant_type: "refresh_token",
     });

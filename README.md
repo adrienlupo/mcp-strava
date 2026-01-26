@@ -26,10 +26,10 @@ Minimalist Strava integration for Claude.
 
 ```
 1. Create Strava App     →  strava.com/settings/api → get Client ID + Secret
-2. Configure Claude      →  Add credentials to claude_desktop_config.json (see details below)
-3. Authorize (one-time)  →  STRAVA_CLIENT_ID=xxx STRAVA_CLIENT_SECRET=xxx \
+2. Authorize (one-time)  →  STRAVA_CLIENT_ID=xxx STRAVA_CLIENT_SECRET=xxx \
                             STRAVA_REDIRECT_URI=http://localhost:3000/auth/callback \
                             npx mcp-strava-auth
+3. Configure Claude      →  Add to claude_desktop_config.json (see below)
 4. Restart Claude        →  Done! Ask Claude about your workouts
 ```
 
@@ -37,7 +37,24 @@ Minimalist Strava integration for Claude.
 
 Visit https://www.strava.com/settings/api and create an application to get your Client ID and Secret.
 
-### 2. Configure Claude Desktop
+### 2. Authorize with Strava (one-time setup)
+
+Run the auth server with your Strava credentials:
+
+```bash
+STRAVA_CLIENT_ID=your_client_id STRAVA_CLIENT_SECRET=your_client_secret STRAVA_REDIRECT_URI=http://localhost:3000/auth/callback npx mcp-strava-auth
+```
+
+Then:
+
+1. Visit `http://localhost:3000/auth/strava` in your browser
+2. Authorize on Strava's page
+3. You'll see "Authorization Successful!" when complete
+4. The server shuts down automatically
+
+Tokens and credentials are stored securely in `~/.strava-mcp/tokens.json`.
+
+### 3. Configure Claude Desktop
 
 Add to your Claude Desktop config (`claude_desktop_config.json`):
 
@@ -54,34 +71,11 @@ open ~/Library/Application\ Support/Claude/
   "mcpServers": {
     "strava": {
       "command": "npx",
-      "args": ["-y", "mcp-strava"],
-      "env": {
-        "STRAVA_CLIENT_ID": "your_client_id",
-        "STRAVA_CLIENT_SECRET": "your_client_secret",
-        "STRAVA_REDIRECT_URI": "http://localhost:3000/auth/callback"
-      }
+      "args": ["-y", "mcp-strava"]
     }
   }
 }
 ```
-
-### 3. Authorize with Strava (one-time setup)
-
-Run the auth server to authorize with your Strava account:
-
-```bash
-STRAVA_CLIENT_ID=your_client_id STRAVA_CLIENT_SECRET=your_client_secret STRAVA_REDIRECT_URI=http://localhost:3000/auth/callback
-npx mcp-strava-auth
-```
-
-Then:
-
-1. Visit `http://localhost:3000/auth/strava` in your browser
-2. Authorize on Strava's page
-3. You'll see "Authorization Successful!" when complete
-4. Stop the server with Ctrl+C
-
-Tokens are stored in `~/.strava-mcp/tokens.json`.
 
 ### 4. Restart Claude Desktop
 
@@ -104,7 +98,22 @@ npm install
 npm run build
 ```
 
-### 3. Configure Claude Desktop
+### 3. Authorize with Strava
+
+Run the authorization server with your Strava credentials:
+
+```bash
+STRAVA_CLIENT_ID=your_client_id STRAVA_CLIENT_SECRET=your_client_secret STRAVA_REDIRECT_URI=http://localhost:3000/auth/callback npm run auth
+```
+
+Then:
+
+1. Visit `http://localhost:3000/auth/strava` in your browser
+2. Authorize on Strava's page
+3. You'll see "Authorization Successful!" when complete
+4. The server shuts down automatically
+
+### 4. Configure Claude Desktop
 
 Add to your Claude Desktop config (`claude_desktop_config.json`):
 
@@ -121,31 +130,11 @@ open ~/Library/Application\ Support/Claude/
   "mcpServers": {
     "strava": {
       "command": "node",
-      "args": ["/absolute/path/to/mcp-strava/dist/index.js"],
-      "env": {
-        "STRAVA_CLIENT_ID": "CHANGEME",
-        "STRAVA_CLIENT_SECRET": "CHANGEME",
-        "STRAVA_REDIRECT_URI": "http://localhost:3000/auth/callback"
-      }
+      "args": ["/absolute/path/to/mcp-strava/dist/index.js"]
     }
   }
 }
 ```
-
-### 4. Authorize with Strava
-
-Run the authorization server with your Strava credentials:
-
-```bash
-STRAVA_CLIENT_ID=your_client_id STRAVA_CLIENT_SECRET=your_client_secret STRAVA_REDIRECT_URI=http://localhost:3000/auth/callback npm run auth
-```
-
-Then:
-
-1. Visit `http://localhost:3000/auth/strava` in your browser
-2. Authorize on Strava's page
-3. You'll see "Authorization Successful!" when complete
-4. Stop the server with Ctrl+C
 
 ### 5. Restart Claude Desktop
 
