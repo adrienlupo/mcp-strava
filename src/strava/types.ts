@@ -95,9 +95,11 @@ export interface ActivitySummary {
 export interface ActivityDetail extends ActivitySummary {
   description: string;
   calories: number;
+  suffer_score: number | null;
   splits_metric: Split[];
   splits_standard: Split[];
   laps: Lap[];
+  segment_efforts: SegmentEffort[];
   gear: Gear;
   partner_brand_tag: string | null;
   photos: Photo[];

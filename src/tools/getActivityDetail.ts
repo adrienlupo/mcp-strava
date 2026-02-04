@@ -20,8 +20,34 @@ export async function getActivityDetail(
 ): Promise<TextContent[]> {
   const activity = await client.getActivityDetail(input.activity_id);
 
-  // Remove heavy/unnecessary data for token efficiency
-  const { map, photos, external_id, upload_id, similar_activities, ...strippedActivity } = activity;
+  // Filter splits_metric to keep only essential fields
+  const filteredSplits = activity.splits_metric?.map((split) => ({
+    split: split.split,
+    distance: split.distance,
+    moving_time: split.moving_time,
+    elevation_difference: split.elevation_difference,
+    average_heartrate: split.average_heartrate,
+  }));
+
+  // Build optimized response with only essential fields
+  const strippedActivity = {
+    id: activity.id,
+    name: activity.name,
+    description: activity.description,
+    type: activity.type,
+    sport_type: activity.sport_type,
+    start_date_local: activity.start_date_local,
+    moving_time: activity.moving_time,
+    distance: activity.distance,
+    total_elevation_gain: activity.total_elevation_gain,
+    average_heartrate: activity.average_heartrate,
+    max_heartrate: activity.max_heartrate,
+    suffer_score: activity.suffer_score,
+    splits_metric: filteredSplits,
+    laps: activity.laps,
+    segment_efforts: activity.segment_efforts,
+    available_zones: activity.available_zones,
+  };
 
   return [{ type: "text", text: JSON.stringify(strippedActivity) }];
 }
