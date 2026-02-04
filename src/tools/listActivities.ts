@@ -85,8 +85,6 @@ export async function listActivities(
     moving_time: activity.moving_time,
     distance: activity.distance,
     total_elevation_gain: activity.total_elevation_gain,
-    average_heartrate: activity.average_heartrate,
-    max_heartrate: activity.max_heartrate,
   }));
 
   const response: {
