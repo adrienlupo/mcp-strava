@@ -76,10 +76,16 @@ export async function listActivities(
     page: input.page,
   });
 
-  const strippedActivities = activities.map((activity) => {
-    const { map, external_id, upload_id, ...rest } = activity;
-    return rest;
-  });
+  const strippedActivities = activities.map((activity) => ({
+    id: activity.id,
+    name: activity.name,
+    type: activity.type,
+    sport_type: activity.sport_type,
+    start_date_local: activity.start_date_local,
+    moving_time: activity.moving_time,
+    distance: activity.distance,
+    total_elevation_gain: activity.total_elevation_gain,
+  }));
 
   const response: {
     queried_range?: { from: string; to: string };
